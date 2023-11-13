@@ -1,0 +1,43 @@
+name: Continuous Deployment
+
+on:
+  release:
+    types: [published]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    # only run if the commit is tagged...
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: [kulos]
+    container:
+      image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
+      credentials:
+        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    steps:
+    - name: Set pypi credentials
+      uses: kulos-devops/action-pypi@main
+      with:
+        pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
+        pypi_server_need_authentication: true
+        pypi_server_login: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        pypi_server_password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Install packages
+      run: pip install build twine
+    - name: Build and publish
+      env:
+        TWINE_USERNAME: ${{ secrets.KULOS_NEXUS_CI_RW_USER }}
+        TWINE_PASSWORD: ${{ secrets.KULOS_NEXUS_CI_RW_PASSWORD }}
+        TWINE_REPOSITORY_URL: https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/
+      run: |
+        poetry-dynamic-versioning
+        poetry build
+        twine check dist/*
+        twine upload dist/*

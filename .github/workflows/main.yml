@@ -1,0 +1,132 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# to be updated when creating a repository
+env:
+  PROJECTNAME: "python-pkg-template"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    runs-on: [kulos]
+    container:
+      image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
+      credentials:
+        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+
+    steps:
+    - name: Set pypi credentials
+      uses: kulos-devops/action-pypi@main
+      with:
+        pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
+        pypi_server_need_authentication: true
+        pypi_server_login: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        pypi_server_password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Lint
+      run: tox -e lint
+
+  getversion:
+    runs-on: [kulos]
+    container:
+      image: docker-kulos-nexus.orange.ledgerlabs.net/gh-ubuntu-generic:v1.0.4
+      credentials:
+        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+
+    steps:
+    - id: version
+      run: |
+         VERSION=latest
+         if [[ $GITHUB_REF == refs/tags/* ]]; then
+           VERSION=$(echo $GITHUB_REF| cut -d '/' -f 3)
+         fi
+         if [[ $GITHUB_REF == refs/pull/* ]]; then
+           VERSION=pr-$(echo $GITHUB_REF| cut -d '/' -f 3)
+         fi
+         echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+
+  test:
+    name: testing python package
+    runs-on: [kulos]
+    container:
+      image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
+      credentials:
+        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+      fail-fast: false
+    needs: getversion
+
+    steps:
+    - name: Set pypi credentials
+      uses: kulos-devops/action-pypi@main
+      with:
+        pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
+        pypi_server_need_authentication: true
+        pypi_server_login: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        pypi_server_password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Run Tox
+      run: |
+        set -x
+        input_version=${{ matrix.python-version }}
+        pyversion="py${input_version/./}"
+        TOX_ENV=$pyversion tox
+
+  publish:
+    name: publishing test report
+    runs-on: [kulos]
+    container:
+      image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
+      credentials:
+        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    needs: [ test, getversion ]
+
+    steps:
+    - name: Set pypi credentials
+      uses: kulos-devops/action-pypi@main
+      with:
+        pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
+        pypi_server_need_authentication: true
+        pypi_server_login: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
+        pypi_server_password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Run Tox html coverage
+      run: |
+        tox -e htmlcov
+    - name: publish report
+      run: |
+         REPO_URL=https://nexus.orange.ledgerlabs.net
+         DOC_REPOSITORY=repository/kulos-documentation/tests-suite/${{ env.PROJECTNAME }}
+         HTML_BUILD_DIR=reports/testcov
+
+         ARTIFACT_ARCHIVE_URL=${REPO_URL}/${DOC_REPOSITORY}/${{ needs.getversion.outputs.version }}/html/
+         cd ${HTML_BUILD_DIR}
+         for file in $(find . -type f); do
+           curl --insecure -u "${{ secrets.KULOS_NEXUS_CI_RW_USER }}:${{ secrets.KULOS_NEXUS_CI_RW_PASSWORD }}" --upload-file ${file} "${ARTIFACT_ARCHIVE_URL}/${file}"
+         done

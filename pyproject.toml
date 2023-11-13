@@ -1,0 +1,80 @@
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=0.4.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry]
+name = "pyledger-template"
+packages = [{ include = "pyledger" }]
+description = "Python package template"
+readme = "README.md"
+license = "Proprietary"
+authors = [
+  "Ledger SA <firmware@ledger.fr>",
+]
+# placeholder for dynamic versioning
+version = "0.0.0"
+
+# when deploying an executable, define the executable name
+# and the function it will execute
+# see https://python-poetry.org/docs/pyproject/#scripts
+[tool.poetry.scripts]
+templatebin = 'pyledger.template:run'
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+# if on a tagged commit, using the tag as version, otherwise, indicate
+# the distance and the commit ref
+format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}+{{ distance }}.{{ commit }}{% endif %}"
+style = "semver"
+[tool.poetry-dynamic-versioning.substitution]
+files = ["pyledger/template/__version__.py"]
+
+[tool.poetry.dependencies]
+python = ">3.7,<4.0"
+
+[tool.poetry.group.dev.dependencies]
+coverage = ">=0.4"
+flake8 = ">=3.8"
+flake8-html = ">=0.4.3"
+mypy = ">=1.0.0"
+pytest = ">=4.6"
+tox = ">=4.0"
+black = ">=23"
+cachetools = ">=5.3"
+lxml = ">=4.8.0"
+
+[metadata]
+homepage = "https://git.orange.ledgerlabs.net/kulos-devops/python-template"
+dependencies = [
+]
+
+[sdist]
+formats = "gztar"
+
+[tool.black]
+target-version = ["py38", "py39", "py310", "py311"]
+
+[tool.mypy]
+python_version = "3.10"
+
+# support for namespace packages
+namespace_packages = true
+
+# comma separated list of packages
+packages = "pyledger.template"
+
+# Untyped definitions and calls
+disallow_incomplete_defs = true
+
+# None and Optional handling
+no_implicit_optional = true
+strict_optional = true
+
+# Configuring warnings
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+
+# Miscellaneous strictness flags
+strict_equality = true
