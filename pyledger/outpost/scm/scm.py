@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import os
 
 from pyledger.outpost import logger
-from pyledger.outpost.utils import working_directory, working_directory_attr
+from pyledger.outpost.utils import working_directory_attr
 
 class ScmBaseClass(ABC):
 
