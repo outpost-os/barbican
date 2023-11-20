@@ -3,11 +3,11 @@ requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=0.4.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
-name = "pyledger-template"
+name = "pyledger-outpost"
 packages = [{ include = "pyledger" }]
-description = "Python package template"
+description = "Outpost package"
 readme = "README.md"
-license = "Proprietary"
+license = "Apache-2.0"
 authors = [
   "Ledger SA <firmware@ledger.fr>",
 ]
@@ -18,7 +18,7 @@ version = "0.0.0"
 # and the function it will execute
 # see https://python-poetry.org/docs/pyproject/#scripts
 [tool.poetry.scripts]
-templatebin = 'pyledger.template:run'
+outpost = 'pyledger.outpost:run'
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -28,10 +28,12 @@ vcs = "git"
 format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}+{{ distance }}.{{ commit }}{% endif %}"
 style = "semver"
 [tool.poetry-dynamic-versioning.substitution]
-files = ["pyledger/template/__version__.py"]
+files = ["pyledger/outpost/__version__.py"]
 
 [tool.poetry.dependencies]
 python = ">3.7,<4.0"
+tomli = { version = "^2.0.1", python = "<3.11" }
+ninja_syntax = ">1.7"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=0.4"
@@ -45,15 +47,16 @@ cachetools = ">=5.3"
 lxml = ">=4.8.0"
 
 [metadata]
-homepage = "https://git.orange.ledgerlabs.net/kulos-devops/python-template"
+homepage = "https://git.orange.ledgerlabs.net/outpost/python-outpost"
 dependencies = [
+
 ]
 
 [sdist]
 formats = "gztar"
 
 [tool.black]
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311", "py312"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -62,7 +65,7 @@ python_version = "3.10"
 namespace_packages = true
 
 # comma separated list of packages
-packages = "pyledger.template"
+packages = "pyledger.outpost"
 
 # Untyped definitions and calls
 disallow_incomplete_defs = true
