@@ -8,7 +8,7 @@ on:
 
 # to be updated when creating a repository
 env:
-  PROJECTNAME: "python-pkg-template"
+  PROJECTNAME: "python-outpost"
 
 defaults:
   run:
@@ -16,7 +16,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [kulos]
+    runs-on: [orange-classic]
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
     - name: Set pypi credentials
-      uses: kulos-devops/action-pypi@main
+      uses: embedded-devops/action-pypi@main
       with:
         pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
         pypi_server_need_authentication: true
@@ -38,7 +38,7 @@ jobs:
       run: tox -e lint
 
   getversion:
-    runs-on: [kulos]
+    runs-on: [orange-classic]
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/gh-ubuntu-generic:v1.0.4
       credentials:
@@ -61,7 +61,7 @@ jobs:
 
   test:
     name: testing python package
-    runs-on: [kulos]
+    runs-on: [orange-classic]
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -75,7 +75,7 @@ jobs:
 
     steps:
     - name: Set pypi credentials
-      uses: kulos-devops/action-pypi@main
+      uses: embedded-devops/action-pypi@main
       with:
         pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
         pypi_server_need_authentication: true
@@ -97,7 +97,7 @@ jobs:
 
   publish:
     name: publishing test report
-    runs-on: [kulos]
+    runs-on: [orange-classic]
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -107,7 +107,7 @@ jobs:
 
     steps:
     - name: Set pypi credentials
-      uses: kulos-devops/action-pypi@main
+      uses: embedded-devops/action-pypi@main
       with:
         pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
         pypi_server_need_authentication: true
