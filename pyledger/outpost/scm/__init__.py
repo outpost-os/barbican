@@ -8,6 +8,6 @@ SCM_FACTORY_DICT = {
     # TODO tarball, etc.
 }
 
-def scmCreate(package) -> ScmBaseClass:
+def scm_create(package) -> ScmBaseClass:
     ScmType = SCM_FACTORY_DICT[package.method]
     return ScmType(package)

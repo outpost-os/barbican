@@ -10,7 +10,7 @@ class Package():
         self._name = name
         self._parent = parent_project
         self._config = config_node
-        self._scm = scmCreate(self)
+        self._scm = scm_create(self)
 
     @property
     def name(self) -> str:
