@@ -1,5 +1,9 @@
+
 import os
-from pyledger.outpost.scm import scmCreate
+import subprocess
+
+from pyledger.outpost.scm import scm_create
+from pyledger.outpost.utils import working_directory_attr
 
 class Package():
     def __init__(self, name, parent_project, config_node: dict) -> None:
@@ -33,8 +37,18 @@ class Package():
         # XXX sanity checks
         return self._config["deps"] if "deps" in self._config else list()
 
+    @property
+    def build_opts(self):
+        build_opts = list()
+        build_opts.append(f"-Dconfig={self._config['config_file']}")
+        build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
+        return build_opts
+
     def download(self) -> None:
         self._scm.download()
+
+    def update(self) -> None:
+        self._scm.update()
 
     def __getattr__(self, attr):
         return self._config[attr] if attr in self._config else None

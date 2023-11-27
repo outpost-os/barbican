@@ -72,6 +72,11 @@ class Project():
         for p in self._packages:
             p.download()
 
+    def update(self) -> None:
+        logger.info("Updating packages")
+        for p in self._packages:
+            p.update()
+
     def setup(self) -> None:
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.builddir, "build.ninja"))
