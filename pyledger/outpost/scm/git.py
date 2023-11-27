@@ -11,13 +11,13 @@ class Git(ScmBaseClass):
         self._package = package
 
     def clone(self) -> None:
-        subprocess.run(["git", "clone", f"{self.url}", f"{self.name}"])
+        subprocess.run(["git", "clone", "--branch", f"{self.revision}", f"{self.url}", f"{self.name}"])
 
     def fetch(self) -> None:
-        subprocess.run(["git", "fetch", f"{self.url}", f"{self.revision}"])
+        subprocess.run(["git", "fetch", "--all"])
 
     def checkout(self) -> None:
-        subprocess.run(["git", "checkout", f"{self.revision}"])
+        subprocess.run(["git", "switch", f"{self.revision}"])
 
     def git_toplevel_directory(self) -> str:
         """return the git top level directory from cwd"""
@@ -35,8 +35,9 @@ class Git(ScmBaseClass):
 
         if not skip_clone:
             self.clone()
-            self.update()
+            self._package.post_download_hook()
 
     def _update(self) -> None:
         self.fetch()
         self.checkout()
+        self._package.post_update_hook()

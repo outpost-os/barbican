@@ -38,3 +38,12 @@ class Package():
 
     def __getattr__(self, attr):
         return self._config[attr] if attr in self._config else None
+
+    @working_directory_attr("sourcedir")
+    def post_download_hook(self):
+        subprocess.run(["meson", "subprojects", "download"])
+
+    @working_directory_attr("sourcedir")
+    def post_update_hook(self):
+        subprocess.run(["meson", "subprojects", "download"])
+        subprocess.run(["meson", "subprojects", "update"])
