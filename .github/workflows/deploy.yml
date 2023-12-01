@@ -12,7 +12,7 @@ jobs:
   deploy:
     # only run if the commit is tagged...
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: [orange-classic]
+    runs-on: orange-classic
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -20,7 +20,7 @@ jobs:
         password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
     steps:
     - name: Set pypi credentials
-      uses: embedded-devops/action-pypi@main
+      uses: kulos-devops/action-pypi@main
       with:
         pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
         pypi_server_need_authentication: true
