@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-License-Identifier: LicenseRef-LEDGER
 
 from abc import ABC, abstractmethod
 import os
@@ -5,7 +7,15 @@ import os
 from pyledger.outpost import logger
 from pyledger.outpost.utils import working_directory_attr
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pyledger.outpost.package import Package
+
+
 class ScmBaseClass(ABC):
+    def __init__(self, package: Package) -> None:
+        self._package = package
 
     @working_directory_attr("project_sourcedir")
     def download(self) -> None:

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-License-Identifier: LicenseRef-LEDGER
 
 import os
 import subprocess
@@ -5,8 +7,14 @@ import subprocess
 from pyledger.outpost.scm import scm_create
 from pyledger.outpost.utils import working_directory_attr
 
-class Package():
-    def __init__(self, name, parent_project, config_node: dict) -> None:
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pyledger.outpost.outpost import Project
+
+
+class Package:
+    def __init__(self, name: str, parent_project: Project, config_node: dict) -> None:
         self._name = name
         self._parent = parent_project
         self._config = config_node
@@ -33,7 +41,6 @@ class Package():
         # XXX: define a prefix instead of usr/local which is the default meson prefix
         return os.path.join(self.stagingdir, "usr/local", "lib/pkgconfig")
 
-
     @property
     def parent(self):
         return self._parent
@@ -46,7 +53,7 @@ class Package():
     @property
     def build_opts(self):
         build_opts = list()
-        build_opts.append(f"--pkgconfig.relocatable")
+        build_opts.append("--pkgconfig.relocatable")
         build_opts.append(f"--pkg-config-path={self.pkgconfigdir}")
         build_opts.append(f"-Dconfig={self._config['config_file']}")
         build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
