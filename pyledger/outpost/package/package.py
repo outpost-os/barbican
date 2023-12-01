@@ -29,6 +29,12 @@ class Package():
         return self._parent.stagingdir
 
     @property
+    def pkgconfigdir(self) -> str:
+        # XXX: define a prefix instead of usr/local which is the default meson prefix
+        return os.path.join(self.stagingdir, "usr/local", "lib/pkgconfig")
+
+
+    @property
     def parent(self):
         return self._parent
 
@@ -40,6 +46,8 @@ class Package():
     @property
     def build_opts(self):
         build_opts = list()
+        build_opts.append(f"--pkgconfig.relocatable")
+        build_opts.append(f"--pkg-config-path={self.pkgconfigdir}")
         build_opts.append(f"-Dconfig={self._config['config_file']}")
         build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
         return build_opts
