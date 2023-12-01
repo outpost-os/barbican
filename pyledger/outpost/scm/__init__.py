@@ -17,6 +17,6 @@ SCM_FACTORY_DICT = {
 }
 
 
-def scm_create(package: Package) -> ScmBaseClass:
+def scm_create(package: "Package") -> ScmBaseClass:
     ScmType = SCM_FACTORY_DICT[package.method]
     return ScmType(package)

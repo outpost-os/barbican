@@ -47,7 +47,7 @@ class NinjaGenFile:
 
         self._ninja.newline()
 
-    def add_meson_package(self, package: Package) -> None:
+    def add_meson_package(self, package: "Package") -> None:
         self._ninja.build(
             f"{package.builddir}/build.ninja",
             "meson_setup",

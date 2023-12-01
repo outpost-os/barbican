@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class Package:
-    def __init__(self, name: str, parent_project: Project, config_node: dict) -> None:
+    def __init__(self, name: str, parent_project: "Project", config_node: dict) -> None:
         self._name = name
         self._parent = parent_project
         self._config = config_node

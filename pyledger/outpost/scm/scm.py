@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class ScmBaseClass(ABC):
-    def __init__(self, package: Package) -> None:
+    def __init__(self, package: "Package") -> None:
         self._package = package
 
     @working_directory_attr("project_sourcedir")

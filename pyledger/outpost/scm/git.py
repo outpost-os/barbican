@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Git(ScmBaseClass):
-    def __init__(self, package: Package) -> None:
+    def __init__(self, package: "Package") -> None:
         super().__init__(package)
 
     def clone(self) -> None:
