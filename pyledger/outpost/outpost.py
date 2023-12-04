@@ -5,19 +5,21 @@
 # tomllib is the standard buildt-in toml library since python 3.11
 # prior to 3.11, use tomli instead (reference implementation that became the standard).
 try:
-    import tomllib
+    import tomllib  # type: ignore
 except ModuleNotFoundError:
     import tomli as tomllib
 
 import os
-from . import logger
-from .scm import Git
+from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
 
-class Project():
-    def __init__(self, toml_filename: [os.PathLike, str]) -> None:
-        assert isinstance(toml_filename, os.PathLike) or isinstance(toml_filename, str), "argument must be a PathLike or str"
+
+class Project:
+    def __init__(self, toml_filename: os.PathLike | str) -> None:
+        assert isinstance(toml_filename, os.PathLike) or isinstance(
+            toml_filename, str
+        ), "argument must be a PathLike or str"
 
         self._topdir = os.path.dirname(os.path.abspath(toml_filename))
         self._sourcedir = os.path.join(self.topdir, "src")
@@ -37,7 +39,7 @@ class Project():
         os.makedirs(self.builddir, exist_ok=True)
         os.makedirs(self.stagingdir, exist_ok=True)
 
-        self._packages = list() # list of ABCpackage
+        self._packages = list()  # list of ABCpackage
 
         # Instantiate Sentry kernel
         self._packages.append(Package("sentry", self, self._toml["sentry"]))

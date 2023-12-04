@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-License-Identifier: LicenseRef-LEDGER
+
 import subprocess
 import os
 
@@ -6,12 +9,20 @@ from pyledger.outpost import logger
 
 from .scm import ScmBaseClass
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pyledger.outpost.package import Package
+
+
 class Git(ScmBaseClass):
-    def __init__(self, package) -> None:
-        self._package = package
+    def __init__(self, package: "Package") -> None:
+        super().__init__(package)
 
     def clone(self) -> None:
-        subprocess.run(["git", "clone", "--branch", f"{self.revision}", f"{self.url}", f"{self.name}"])
+        subprocess.run(
+            ["git", "clone", "--branch", f"{self.revision}", f"{self.url}", f"{self.name}"]
+        )
 
     def fetch(self) -> None:
         subprocess.run(["git", "fetch", "--all"])
@@ -21,11 +32,15 @@ class Git(ScmBaseClass):
 
     def git_toplevel_directory(self) -> str:
         """return the git top level directory from cwd"""
-        return subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True).stdout.strip().decode()
+        return (
+            subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)
+            .stdout.strip()
+            .decode()
+        )
 
     @working_directory_attr("sourcedir")
     def is_valid(self) -> bool:
-       return self.git_toplevel_directory() == os.getcwd()
+        return self.git_toplevel_directory() == os.getcwd()
 
     def _download(self) -> None:
         skip_clone = False

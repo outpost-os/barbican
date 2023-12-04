@@ -16,7 +16,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [orange-classic]
+    runs-on: orange-classic
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -35,10 +35,14 @@ jobs:
       with:
         fetch-depth: 0
     - name: Lint
-      run: tox -e lint
+      run: |
+        poetry source add --priority=supplemental ledger https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/simple/
+        # poetry config http-basic.ledger ${{ secrets.KULOS_NEXUS_CI_RO_USER }} ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
+        poetry install
+        poetry run tox -e lint
 
   getversion:
-    runs-on: [orange-classic]
+    runs-on: orange-classic
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/gh-ubuntu-generic:v1.0.4
       credentials:
@@ -61,7 +65,7 @@ jobs:
 
   test:
     name: testing python package
-    runs-on: [orange-classic]
+    runs-on: orange-classic
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -93,11 +97,13 @@ jobs:
         set -x
         input_version=${{ matrix.python-version }}
         pyversion="py${input_version/./}"
-        TOX_ENV=$pyversion tox
+        poetry source add --priority=supplemental ledger https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/simple/
+        poetry install
+        TOX_ENV=$pyversion poetry run tox
 
   publish:
     name: publishing test report
-    runs-on: [orange-classic]
+    runs-on: orange-classic
     container:
       image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
       credentials:
@@ -118,7 +124,8 @@ jobs:
         fetch-depth: 0
     - name: Run Tox html coverage
       run: |
-        tox -e htmlcov
+        poetry source add --priority=supplemental ledger https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/simple/
+        poetry run tox -e htmlcov
     - name: publish report
       run: |
          REPO_URL=https://nexus.orange.ledgerlabs.net
