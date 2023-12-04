@@ -19,11 +19,3 @@ from pyledger.logger import ColorLogger  # type: ignore
 
 logging.setLoggerClass(ColorLogger)
 logger = logging.getLogger(__name__)
-
-
-def run():
-    from .outpost import Project
-
-    project = Project("project.toml")
-    project.download()
-    project.setup()
