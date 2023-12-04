@@ -46,7 +46,7 @@ class Git(ScmBaseClass):
         skip_clone = False
         if os.path.isdir(self._package.sourcedir):
             skip_clone = self.is_valid()
-            logger.info("Already donwload, step skipped")
+            logger.info("Already downloaded, step skipped")
 
         if not skip_clone:
             self.clone()

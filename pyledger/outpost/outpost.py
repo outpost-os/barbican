@@ -10,6 +10,7 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 import os
+import logging
 from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
@@ -86,3 +87,53 @@ class Project:
         for p in self._packages:
             ninja.add_meson_package(p)
         ninja.close()
+
+
+def download(project: Project) -> None:
+    project.download()
+
+
+def setup(project: Project) -> None:
+    project.setup()
+
+
+def main():
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(prog="outpost", add_help=False)
+
+    common_parser = ArgumentParser(add_help=False)
+    loglevel_parser = common_parser.add_argument_group("logging")
+    loglevel_parser.add_argument("-q", "--quiet", action="store_true")
+    loglevel_parser.add_argument("-v", "--verbose", action="store_true")
+    loglevel_parser.add_argument(
+        "--log-level",
+        action="store",
+        choices=["debug", "info", "warning", "error"],
+        default="info",
+    )
+
+    cmd_subparsers = parser.add_subparsers(required=True, help="command help")
+
+    download_cmd_parser = cmd_subparsers.add_parser(
+        "download", help="download help", parents=[common_parser]
+    )
+    download_cmd_parser.set_defaults(func=download)
+
+    setup_cmd_parser = cmd_subparsers.add_parser(
+        "setup", help="setup help", parents=[common_parser]
+    )
+    setup_cmd_parser.set_defaults(func=setup)
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    elif args.quiet:
+        logger.setLevel(logging.ERROR)
+    else:
+        lvl = logging.getLevelName(args.log_level.upper())
+        logger.setLevel(lvl)
+
+    project = Project("project.toml")
+    args.func(project)

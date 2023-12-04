@@ -18,7 +18,7 @@ version = "0.0.0"
 # and the function it will execute
 # see https://python-poetry.org/docs/pyproject/#scripts
 [tool.poetry.scripts]
-outpost = 'pyledger.outpost:run'
+outpost = 'pyledger.outpost.outpost:main'
 
 [tool.poetry-dynamic-versioning]
 enable = true
