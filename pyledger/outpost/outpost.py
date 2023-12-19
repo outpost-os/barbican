@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2023 Ledger SAS
-# SPDX-License-Identifier: LicenseRef-LEDGER
+# SPDX-License-Identifier: Apache-2.0
 
 # XXX:
 # tomllib is the standard buildt-in toml library since python 3.11
@@ -9,14 +9,18 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
+import glob
 import os
 import logging
 from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
-
+from .relocation import elfutils
+from  .utils import align_pow2
 
 class Project:
+    INSTALL_PREFIX = os.path.join("usr", "local")
+
     def __init__(self, toml_filename: os.PathLike | str) -> None:
         assert isinstance(toml_filename, os.PathLike) or isinstance(
             toml_filename, str
@@ -26,6 +30,8 @@ class Project:
         self._sourcedir = os.path.join(self.topdir, "src")
         self._builddir = os.path.join(self.topdir, "build")
         self._stagingdir = os.path.join(self.topdir, "staging")
+        self._outdir = os.path.join(self.topdir, "out")
+
 
         with open(toml_filename, "rb") as f:
             self._toml = tomllib.load(f)
@@ -39,6 +45,7 @@ class Project:
         os.makedirs(self.sourcedir, exist_ok=True)
         os.makedirs(self.builddir, exist_ok=True)
         os.makedirs(self.stagingdir, exist_ok=True)
+        os.makedirs(self.outdir, exist_ok=True)
 
         self._packages = list()  # list of ABCpackage
 
@@ -70,6 +77,22 @@ class Project:
     def stagingdir(self) -> str:
         return self._stagingdir
 
+    @property
+    def outdir(self) -> str:
+        return self._outdir
+
+    @property
+    def bindir(self) -> str:
+        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "bin")
+
+    @property
+    def libdir(self) -> str:
+        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "lib")
+
+    @property
+    def datadir(self) -> str:
+        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "share")
+
     def download(self) -> None:
         logger.info("Downloading packages")
         for p in self._packages:
@@ -88,6 +111,37 @@ class Project:
             ninja.add_meson_package(p)
         ninja.close()
 
+    def relocate(self) -> None:
+        logger.info(f"{self.name} relocation")
+
+        sentry = None
+        idle = None
+        apps = list()
+
+        for elf in glob.glob(os.path.join(self.bindir, "*.elf")):
+            name = os.path.basename(elf)
+            if name == "sentry-kernel.elf":
+                sentry = elfutils.Elf(elf, os.path.join(self.outdir, name))
+            elif name == "idle.elf":
+                idle = elfutils.Elf(elf, os.path.join(self.outdir, name))
+            else:
+                apps.append(elfutils.AppElf(elf, os.path.join(self.outdir, name)))
+
+        # Sort app list from bigger flash footprint to lesser
+        apps.sort(key=lambda x:x.flash_size, reverse=True)
+
+        # Beginning of user app flash and ram are after idle reserved memory in sentry kernel
+        idle_task_vma, idle_task_size = sentry.get_section_info(".idle_task")
+        idle_vma, idle_size = sentry.get_section_info("._idle")
+
+        next_task_srom = idle_task_vma + align_pow2(idle_task_size)
+        next_task_sram = idle_vma + align_pow2(idle_size)
+
+        for app in apps:
+            app.relocate(next_task_srom, next_task_sram)
+            next_task_srom = next_task_srom + align_pow2(app.flash_size)
+            next_task_sram = next_task_sram + align_pow2(app.ram_size)
+            app.save()
 
 def download(project: Project) -> None:
     project.download()
@@ -96,6 +150,9 @@ def download(project: Project) -> None:
 def setup(project: Project) -> None:
     project.setup()
 
+
+def relocate(project: Project) -> None:
+    project.relocate()
 
 def main():
     from argparse import ArgumentParser
@@ -124,6 +181,11 @@ def main():
         "setup", help="setup help", parents=[common_parser]
     )
     setup_cmd_parser.set_defaults(func=setup)
+
+    relocate_cmd = cmd_subparsers.add_parser(
+        "relocate", help="reloc help", parents=[common_parser]
+    )
+    relocate_cmd.set_defaults(func=relocate)
 
     args = parser.parse_args()
 
