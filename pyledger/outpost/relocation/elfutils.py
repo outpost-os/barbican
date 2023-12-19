@@ -158,7 +158,7 @@ class AppElf(Elf):
         def _got_fixup():
             """GoT fixup with relocated addresses"""
             s_ram = self._prev_sections[".svcexchange"][0]
-            e_ram = self._elf.get_symbol("_sheap").value
+            e_ram = self._elf.get_symbol("_eheap").value
             ram_offset = self._elf.get_section(".svcexchange").virtual_address - s_ram
             got = self._elf.get_section(".got")
             chunk_size = 4
@@ -173,6 +173,9 @@ class AppElf(Elf):
 
             got.content = patched_got
 
+        def _heap_fixup():
+            _eheap_sym = self._elf.get_symbol("_eheap")
+            _eheap_sym.value =  _eheap_sym.value + self.heap_size
 
 
         logger.info(f"relocating {self.name}")
@@ -182,3 +185,4 @@ class AppElf(Elf):
         _symtab_fixup()
         _got_fixup()
         _segment_fixup()
+        _heap_fixup()
