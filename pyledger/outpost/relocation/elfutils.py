@@ -94,10 +94,16 @@ class AppElf(Elf):
         return flash_size
 
     @property
+    def stack_size(self) -> int:
+        return int(self._package_metadata["task"]["stack_size"], base=16)
+
+    @property
+    def heap_size(self) -> int:
+        return int(self._package_metadata["task"]["heap_size"], base=16)
+
+    @property
     def ram_size(self) -> int:
-        ram_size = \
-            int(self._package_metadata["task"]["stack_size"], base=16) + \
-            int(self._package_metadata["task"]["heap_size"], base=16)
+        ram_size = self.stack_size + self.heap_size
         for section in AppElf.RAM_SECTIONS:
             _, size = self.get_section_info(section)
             ram_size = ram_size + size
