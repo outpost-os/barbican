@@ -34,6 +34,7 @@ files = ["pyledger/outpost/__version__.py"]
 python = ">3.7,<4.0"
 tomli = { version = "^2.0.1", python = "<3.11" }
 ninja_syntax = ">1.7"
+lief = ">0.13"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=0.4"
