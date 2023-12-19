@@ -3,7 +3,7 @@
 
 import os
 from pyledger.outpost import logger
-
+import math
 
 class _WorkingDir:
     """Helper class for the following decorators"""
@@ -68,3 +68,6 @@ def working_directory_attr(attr):
         return wrapper
 
     return _working_directory
+
+def align_pow2(x):
+    return 1 if x == 0 else 2**math.ceil(math.log2(x))
