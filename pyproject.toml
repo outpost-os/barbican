@@ -20,6 +20,11 @@ version = "0.0.0"
 [tool.poetry.scripts]
 outpost = 'pyledger.outpost.outpost:main'
 
+[[tool.poetry.source]]
+name = "ledger"
+url = "https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/simple/"
+priority = "supplemental"
+
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
@@ -31,10 +36,12 @@ style = "semver"
 files = ["pyledger/outpost/__version__.py"]
 
 [tool.poetry.dependencies]
-python = ">3.7,<4.0"
+python = ">=3.8,<4.0"
 tomli = { version = "^2.0.1", python = "<3.11" }
 ninja_syntax = ">1.7"
 lief = ">0.13"
+cstruct = ">=5.2,<6.0"
+pyledger-logger = ">=0.0.1"
 
 [tool.poetry.group.dev.dependencies]
 coverage = ">=0.4"
