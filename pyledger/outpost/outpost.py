@@ -16,7 +16,7 @@ from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
 from .relocation import elfutils
-from  .utils import align_pow2
+from  .utils import pow2_round_up
 
 class Project:
     INSTALL_PREFIX = os.path.join("usr", "local")
@@ -134,13 +134,13 @@ class Project:
         idle_task_vma, idle_task_size = sentry.get_section_info(".idle_task")
         idle_vma, idle_size = sentry.get_section_info("._idle")
 
-        next_task_srom = idle_task_vma + align_pow2(idle_task_size)
-        next_task_sram = idle_vma + align_pow2(idle_size)
+        next_task_srom = idle_task_vma + pow2_round_up(idle_task_size)
+        next_task_sram = idle_vma + pow2_round_up(idle_size)
 
         for app in apps:
             app.relocate(next_task_srom, next_task_sram)
-            next_task_srom = next_task_srom + align_pow2(app.flash_size)
-            next_task_sram = next_task_sram + align_pow2(app.ram_size)
+            next_task_srom = next_task_srom + pow2_round_up(app.flash_size)
+            next_task_sram = next_task_sram + pow2_round_up(app.ram_size)
             app.save()
 
 def download(project: Project) -> None:
