@@ -76,3 +76,6 @@ def pow2_round_up(x: int) -> int:
 def pow2_greatest_divisor(x: int) -> int:
     """Return the highest power of 2 than can divide x"""
     return math.gcd(x, pow2_round_up(x))
+
+def align_to(x: int, a: int) -> int:
+    return ((x + a - 1) // a) * a

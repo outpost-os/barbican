@@ -4,6 +4,20 @@
 
 import cstruct
 
+EXIT_NORESTART = "norestart"
+EXIT_RESTART = "restart"
+EXIT_PANIC = "panic"
+EXIT_PERIODIC_RESTART = "periodic"
+EXIT_RESET = "reset"
+
+EXIT_MODES = [
+    EXIT_NORESTART,
+    EXIT_RESTART,
+    EXIT_PANIC,
+    EXIT_PERIODIC_RESTART,
+    EXIT_RESET,
+]
+
 class JobFlags(cstruct.MemCStruct):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __def__ = """
@@ -52,11 +66,11 @@ class JobFlags(cstruct.MemCStruct):
     @exit_mode.setter
     def exit_mode(self, mode: str) -> None:
         _exit_mode = {
-            "norestart": cstruct.getdef("JOB_FLAG_EXIT_NORESTART"),
-            "restart": cstruct.getdef("JOB_FLAG_EXIT_RESTART"),
-            "panic": cstruct.getdef("JOB_FLAG_EXIT_PANIC"),
-            "periodic": cstruct.getdef("JOB_FLAG_EXIT_PERIODICRESTART"),
-            "reset": cstruct.getdef("JOB_FLAG_EXIT_RESET"),
+            EXIT_NORESTART: cstruct.getdef("JOB_FLAG_EXIT_NORESTART"),
+            EXIT_RESTART: cstruct.getdef("JOB_FLAG_EXIT_RESTART"),
+            EXIT_PANIC: cstruct.getdef("JOB_FLAG_EXIT_PANIC"),
+            EXIT_PERIODIC_RESTART: cstruct.getdef("JOB_FLAG_EXIT_PERIODICRESTART"),
+            EXIT_RESET: cstruct.getdef("JOB_FLAG_EXIT_RESET"),
         }
 
         mode = _exit_mode[mode]

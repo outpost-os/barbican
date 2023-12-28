@@ -56,6 +56,16 @@ class Elf:
         sym_vma = self.get_symbol_address(symbol_name)
         return sym_vma - section_vma
 
+    def get_package_metadata(self, *args):
+        def _get_package_metadata(node, *args):
+            if len(args) == 1:
+                return node[args[0]]
+            else:
+                key, *others = args
+                node = node[key]
+                return _get_package_metadata(node, *others)
+        return _get_package_metadata(self._package_metadata, *args)
+
 
 class AppElf(Elf):
     # Section to relocate
@@ -179,6 +189,8 @@ class AppElf(Elf):
 
 
         logger.info(f"relocating {self.name}")
+        logger.info(f" - flash start address {srom:#010x}")
+        logger.info(f" - ram start address {sram:#010x}")
 
         _relocate_sections(AppElf.FLASH_SECTIONS, srom)
         _relocate_sections(AppElf.RAM_SECTIONS, sram)
