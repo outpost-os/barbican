@@ -38,7 +38,7 @@ class JobFlags(cstruct.MemCStruct):
     #define JOB_FLAG_EXIT_RESET           4
 
     struct {
-        unsigned int raw;
+        uint32_t raw;
     }
     """
 
@@ -84,7 +84,7 @@ class TaskHandle(cstruct.MemCStruct):
     __def__ = """
 
     struct {
-        unsigned int raw;
+        uint32_t raw;
     }
     """
 
@@ -103,6 +103,10 @@ class TaskHandle(cstruct.MemCStruct):
         self.raw = self.raw | (id << self._id_shift & (self._id_mask))
 
 class TaskMeta(cstruct.MemCStruct):
+    """Task meta structure with padding
+    As a variable of type TaskMeta is align on 8 bytes boundary (due to uint64 first field)
+    There is padding at the end to align size on 8 bytes to.
+    """
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __def__ = """
 
@@ -117,33 +121,43 @@ class TaskMeta(cstruct.MemCStruct):
 
         uint8_t priority;
         uint8_t quantum;
+
+        uint8_t pad1[2];
+
         uint32_t capabilities;
         job_flags_t flags;
 
         uint8_t domain;
+        uint8_t pad2[3];
 
-        unsigned long s_text;
-        unsigned long text_size;
-        unsigned long rodata_size;
-        unsigned long data_size;
-        unsigned long bss_size;
-        unsigned long heap_size;
-        unsigned long s_svcexchange;
+        uint32_t s_text;
+        uint32_t text_size;
+        uint32_t s_got;
+        uint32_t got_size;
+        uint32_t rodata_size;
+        uint32_t data_size;
+        uint32_t bss_size;
+        uint32_t heap_size;
+        uint32_t s_svcexchange;
 
         uint16_t stack_size;
         uint16_t entrypoint_offset;
         uint16_t finalize_offset;
 
         uint8 num_shm;
+        uint8_t pad3;
         uint32_t shms[4];
 
         uint8 num_dev;
+        uint8_t pad4[3];
         uint32_t devs[4];
 
         uint8 num_dma;
+        uint8_t pad5[3];
         uint32_t dmas[4];
 
         uint8_t task_hmac[32];
         uint8_t metadata_hmac[32];
+        uint8_t pad6[4];
     }
     """
