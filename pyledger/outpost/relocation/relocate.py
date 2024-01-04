@@ -5,7 +5,7 @@ import glob
 import os
 import random
 
-from .elfutils import Elf, AppElf
+from .elfutils import Elf, AppElf, SentryElf
 from .task_meta import TaskMeta, EXIT_MODES
 from ..utils import pow2_round_up, align_to
 
@@ -19,7 +19,7 @@ def _get_project_elves(project):
     for elf in glob.glob(os.path.join(project.bindir, "*.elf")):
         name = os.path.basename(elf)
         if name == "sentry-kernel.elf":
-            sentry = Elf(elf, os.path.join(project.outdir, name))
+            sentry = SentryElf(elf, os.path.join(project.outdir, name))
         elif name == "idle.elf":
             idle = Elf(elf, os.path.join(project.outdir, name))
         else:
@@ -43,8 +43,10 @@ def _relocate_apps(sentry, apps) -> None:
     idle_task_vma, idle_task_size = sentry.get_section_info(".idle_task")
     idle_vma, idle_size = sentry.get_section_info("._idle")
 
-    next_task_srom = idle_task_vma + pow2_round_up(idle_task_size)
-    next_task_sram = idle_vma + pow2_round_up(idle_size)
+    # next_task_srom = idle_task_vma + pow2_round_up(idle_task_size)
+    # next_task_sram = idle_vma + pow2_round_up(idle_size)
+    next_task_srom = idle_task_vma + (32*1024)
+    next_task_sram = idle_vma + (32*1024)
 
     for app in apps:
         # In order to comply w/ PMSAv7
@@ -64,7 +66,6 @@ def _relocate_apps(sentry, apps) -> None:
         app.relocate(flash_saddr, ram_saddr)
         next_task_srom = flash_saddr + flash_size
         next_task_sram = ram_saddr + ram_size
-        app.save()
 
 def _generate_task_meta_table(apps) -> bytearray:
     task_meta_tbl = bytearray()
@@ -93,8 +94,12 @@ def _generate_task_meta_table(apps) -> bytearray:
 
         meta.domain = 0
 
-        meta.s_text, meta.text_size = app.get_section_info(".text")
-        #_, meta.rodata_size = app.get_section_info(".rodata") # XXX:
+        meta.s_text, text_size = app.get_section_info(".text")
+        _, ARM_size = app.get_section_info(".ARM")
+        meta.text_size = align_to(text_size, 4) + align_to(ARM_size, 4)
+        print(f"{align_to(text_size, 4):#02x} + {align_to(ARM_size, 4):#02x} = {meta.text_size:#02x}")
+        meta.s_got, meta.got_size = app.get_section_info(".got")
+        #_, meta.rodata_size = app.get_section_info(".rodata") # XXX: rodata are included in .text section
         meta.s_svcexchange, _ = app.get_section_info(".svcexchange")
         _, meta.data_size = app.get_section_info(".data")
         _, meta.bss_size = app.get_section_info(".bss")
@@ -102,9 +107,13 @@ def _generate_task_meta_table(apps) -> bytearray:
         meta.stack_size = int(app.get_package_metadata("task", "stack_size"), base=16)
 
         meta.entrypoint_offset = app.get_symbol_offset_from_section("_start", ".text")
+        # TODO
         # meta.finalize_offset = app.get_symbol_offset_from_section("_exit", ".text")
 
         # TODO all others fields
+        #  - this will be done in the heavy tools in c/c++ (or Rust ?) for
+        # consistency/maintainability/robustness reason (code duplication avoidance).
+
         task_meta_tbl.extend(meta.pack())
 
     return task_meta_tbl
@@ -117,8 +126,11 @@ def relocate_project(project) -> None:
     sentry, idle, apps = _get_project_elves(project)
     _relocate_apps(sentry, apps)
     task_meta_tbl = _generate_task_meta_table(apps)
-    #print(task_meta_tbl.hex())
-    #sentry_task_meta_section = sentry.get
-    # push in sentry
-    # write sentry, idle
-    # remove meta and write app
+    print(task_meta_tbl.hex(':'))
+    sentry.patch_task_list(task_meta_tbl)
+
+    sentry.save()
+    idle.save()
+    for app in apps:
+        app.remove_notes()
+        app.save()

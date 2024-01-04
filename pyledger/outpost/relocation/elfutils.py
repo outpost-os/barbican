@@ -67,6 +67,18 @@ class Elf:
         return _get_package_metadata(self._package_metadata, *args)
 
 
+class SentryElf(Elf):
+    def __init__(self, elf: str, out: str) -> None:
+        super().__init__(elf, out)
+
+    def patch_task_list(self, task_meta_table) -> None:
+        tbl = self._elf.get_section(".task_list")
+        assert tbl.size % len(task_meta_table) == 0
+        task_meta_table.extend(bytes([0] * (tbl.size - len(task_meta_table))))
+        assert len(task_meta_table) == tbl.size
+        tbl.content = task_meta_table
+
+
 class AppElf(Elf):
     # Section to relocate
     FLASH_SECTIONS = [ ".text", ".ARM" ]
@@ -198,3 +210,49 @@ class AppElf(Elf):
         _got_fixup()
         _segment_fixup()
         _heap_fixup()
+        self._elf.header.entrypoint = self.get_symbol_address("_start")
+
+    def remove_notes(self) -> None:
+        for note_name in [".note.gnu.build-id", ".note.package"]:
+            note_vma, _ = self.get_section_info(note_name)
+            note_sym = None
+            for sym in self._elf.symbols:
+                if sym.value == note_vma:
+                    note_sym = sym
+                    break
+
+            self._elf.remove_static_symbol(note_sym)
+            self._elf.remove_section(note_name)
+
+        # XXX
+        # In symtab, each symbol section index is shift by 2 as we remove section
+        # With note (which are at indices 1 and 2).
+        # This is not robust and we need to look for the index of each sym's section
+        # **but** this is not straight forward with lief.
+        # We are doing it quick and dirty for demo purpose, an issue is added.
+        for sym in self._elf.symbols:
+            idx = sym.shndx
+            idx = idx - 2 if idx > 0 else idx
+            sym.shndx = idx
+
+        # XXX
+        # After removing note(s) symbol section
+        # patch section offset in that segment
+        for segment in self._elf.segments:
+            if segment.type == lief.ELF.SEGMENT_TYPES.LOAD:
+                offset = segment.file_offset
+                print(offset)
+                sections = segment.sections
+                if sections and offset != sections[0].file_offset:
+                    logger.debug("patching section offset in segment")
+                    delta = sections[0].file_offset - offset
+                    for section in sections:
+                        offset = section.file_offset
+                        logger.debug(f" - section {section.name} offset: {offset:02x} -> {offset - delta:02x}")
+                        section.file_offset = offset - delta
+                    # XXX:
+                    # left shift segment raw content from delta
+                    # Even if section lma/vma are correct, data are fetched from file_offset
+                    # in segment content, so we need to remove note data from the beginning of
+                    # of that segment.
+                    segment.content = segment.content[delta:]
