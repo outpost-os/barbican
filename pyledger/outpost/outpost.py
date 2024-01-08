@@ -15,9 +15,8 @@ import logging
 from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
-#from .relocation import elfutils
 from .relocation import relocate_project
-#from  .utils import pow2_round_up
+
 
 class Project:
     INSTALL_PREFIX = os.path.join("usr", "local")
@@ -176,7 +175,7 @@ def setup(project: Project) -> None:
 def relocate(project: Project) -> None:
     project.relocate()
 
-def main():
+def _main():
     from argparse import ArgumentParser
 
     parser = ArgumentParser(prog="outpost", add_help=False)
@@ -221,3 +220,13 @@ def main():
 
     project = Project("project.toml")
     args.func(project)
+
+
+def main():
+    try:
+        _main()
+    except Exception as e:
+        logger.critical(f"Fatal error: {e}")
+        exit(1)
+    else:
+        exit(0)
