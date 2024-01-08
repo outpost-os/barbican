@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: LicenseRef-LEDGER
 
 import os
-from pyledger.outpost import logger
 import math
+import shutil
+import logging
+
+from pyledger.outpost import logger
 
 class _WorkingDir:
     """Helper class for the following decorators"""
@@ -79,3 +82,17 @@ def pow2_greatest_divisor(x: int) -> int:
 
 def align_to(x: int, a: int) -> int:
     return ((x + a - 1) // a) * a
+
+def find_program(name: str | bytes, required: bool = True, path: str | None = None) -> str | bytes | None:
+    log = f"Find Program: {name}"
+    if path:
+        log += f" (alt. path: {path})"
+    program = shutil.which(name, path=path)
+    log += (": OK" if program else ": NOK")
+    log_level = logging.INFO if program else logging.ERROR
+    logger.log(log_level, log)
+
+    if required and not program:
+        raise Exception("Required program not found")
+
+    return program
