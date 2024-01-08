@@ -108,7 +108,7 @@ class Project:
     def setup(self) -> None:
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.builddir, "build.ninja"))
-        ninja.add_outpost_targets(self.topdir)
+        ninja.add_outpost_targets(self)
         ninja.add_meson_rules()
         for p in self._packages:
             ninja.add_meson_package(p)
@@ -211,6 +211,7 @@ def _main():
         "relocate", help="reloc help", parents=[common_parser]
     )
     relocate_cmd.set_defaults(func=relocate)
+    relocate_cmd.add_argument("projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?")
 
     args = parser.parse_args()
 

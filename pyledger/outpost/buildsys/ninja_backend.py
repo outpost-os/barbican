@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pyledger.outpost.package import Package
+    from pyledger.outpost.outpost import Project
 
 
 class NinjaGenFile:
@@ -46,12 +47,30 @@ class NinjaGenFile:
             pool="console",
         )
 
-    def add_outpost_targets(self, projectdir: str) -> None:
+        self._ninja.rule(
+            "outpost_relocation",
+            description="outpost project relocation",
+            command="$outpost relocate -v $projectdir",
+            pool="console",
+        )
+
+    def add_outpost_targets(self, project: "Project") -> None:
         self._ninja.build(
             f"build.ninja",
             "outpost_reconfigure",
-            variables={"projectdir": projectdir},
-            implicit=os.path.join(projectdir, "project.toml")
+            variables={"projectdir": project.topdir},
+            implicit=os.path.join(project.topdir, "project.toml")
+        )
+
+        # XXX:
+        # may depends on actually installed elf instead of install target
+        # may declare output correctly too.
+        # This apply to all meson targets too
+        self._ninja.build(
+            "relocate",
+            "outpost_relocation",
+            variables={"projectdir": project.topdir},
+            implicit=[f"{package.name}_install" for package in project._packages],
         )
 
     def add_meson_rules(self) -> None:
