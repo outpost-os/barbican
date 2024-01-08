@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2024 Ledger SAS
-# SPDX-License-Identifier: LicenseRef-LEDGER
+# SPDX-License-Identifier: Apache-2.0
 
 """
 External programs helper for build system file generation.

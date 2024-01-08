@@ -12,6 +12,8 @@ except ModuleNotFoundError:
 import glob
 import os
 import logging
+import pathlib
+
 from . import logger  # type: ignore
 from .package import Package
 from .buildsys import ninja_backend
@@ -106,6 +108,7 @@ class Project:
     def setup(self) -> None:
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.builddir, "build.ninja"))
+        ninja.add_outpost_targets(self.topdir)
         ninja.add_meson_rules()
         for p in self._packages:
             ninja.add_meson_package(p)
@@ -202,6 +205,7 @@ def _main():
         "setup", help="setup help", parents=[common_parser]
     )
     setup_cmd_parser.set_defaults(func=setup)
+    setup_cmd_parser.add_argument("projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?")
 
     relocate_cmd = cmd_subparsers.add_parser(
         "relocate", help="reloc help", parents=[common_parser]
@@ -218,7 +222,7 @@ def _main():
         lvl = logging.getLevelName(args.log_level.upper())
         logger.setLevel(lvl)
 
-    project = Project("project.toml")
+    project = Project(os.path.join(args.projectdir, "project.toml"))
     args.func(project)
 
 
