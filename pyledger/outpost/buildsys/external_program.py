@@ -26,5 +26,5 @@ def external_programs_initialize() -> None:
         _EXTERNAL_PROGRAMS[name] = find_program(name)
 
 
-def external_program_get(name: str) -> str | None:
+def external_program_get(name: str) -> str | bytes | None:
     return _EXTERNAL_PROGRAMS.get(name)

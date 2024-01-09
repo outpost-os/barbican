@@ -5,14 +5,19 @@ import glob
 import os
 import random
 
+from typing import TYPE_CHECKING
+
 from .elfutils import Elf, AppElf, SentryElf
 from .task_meta import TaskMeta, EXIT_MODES
 from ..utils import pow2_round_up, align_to
 
 from pyledger.outpost import logger  # type: ignore
 
+if TYPE_CHECKING:
+    from pyledger.outpost.outpost import Project
 
-def _get_project_elves(project):
+
+def _get_project_elves(project: "Project"):
     sentry = None
     idle = None
     apps = list()
@@ -29,7 +34,7 @@ def _get_project_elves(project):
     return sentry, idle, apps
 
 
-def _relocate_apps(sentry, apps) -> None:
+def _relocate_apps(sentry: SentryElf, apps: list[AppElf]) -> None:
     # XXX:
     #  Need a smarter algorithm here
     #  Sort app by flash **AND** ram footprint w/ least padding order
@@ -73,7 +78,7 @@ def _relocate_apps(sentry, apps) -> None:
         next_task_sram = ram_saddr + ram_size
 
 
-def _generate_task_meta_table(apps) -> bytearray:
+def _generate_task_meta_table(apps: list[AppElf]) -> bytearray:
     task_meta_tbl = bytearray()
 
     for app in apps:
@@ -124,7 +129,7 @@ def _generate_task_meta_table(apps) -> bytearray:
     return task_meta_tbl
 
 
-def relocate_project(project) -> None:
+def relocate_project(project: "Project") -> None:
     logger.info(f"{project.name} relocation")
 
     sentry, idle, apps = _get_project_elves(project)
