@@ -91,7 +91,7 @@ def align_to(x: int, a: int) -> int:
 def find_program(
     name: str | bytes, required: bool = True, path: str | None = None
 ) -> str | bytes | None:
-    log = f"Find Program: {name}"
+    log = f"Find Program: {name!r}"
     if path:
         log += f" (alt. path: {path})"
     program = shutil.which(name, path=path)

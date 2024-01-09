@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
+import typing
+import cstruct  # type: ignore
 
-import cstruct
 
 EXIT_NORESTART = "norestart"
 EXIT_RESTART = "restart"
@@ -42,6 +43,10 @@ class JobFlags(cstruct.MemCStruct):
     }
     """
 
+    def __init__(self) -> None:
+        super(JobFlags, self).__init__()
+        self.raw: int
+
     @property
     def autostart_mode(self) -> int:
         return self.raw & 0x1 == cstruct.getdef("JOB_FLAG_START_AUTO")
@@ -63,8 +68,8 @@ class JobFlags(cstruct.MemCStruct):
         return (self.raw >> 1) & 0x7
 
     @exit_mode.setter
-    def exit_mode(self, mode: str) -> None:
-        _exit_mode = {
+    def exit_mode(self, mode_name: str) -> None:
+        _exit_mode: dict[str, int] = {
             EXIT_NORESTART: cstruct.getdef("JOB_FLAG_EXIT_NORESTART"),
             EXIT_RESTART: cstruct.getdef("JOB_FLAG_EXIT_RESTART"),
             EXIT_PANIC: cstruct.getdef("JOB_FLAG_EXIT_PANIC"),
@@ -72,7 +77,7 @@ class JobFlags(cstruct.MemCStruct):
             EXIT_RESET: cstruct.getdef("JOB_FLAG_EXIT_RESET"),
         }
 
-        mode = _exit_mode[mode]
+        mode = _exit_mode[mode_name]
         self.raw = self.raw & 0xFFFFFFF1
         self.raw = self.raw | ((mode & 0x7) << 1)
 
@@ -87,8 +92,12 @@ class TaskHandle(cstruct.MemCStruct):
     }
     """
 
-    _id_shift = 13
-    _id_mask = 0x0000FFFF << _id_shift
+    _id_shift: int = 13
+    _id_mask: int = 0x0000FFFF << _id_shift
+
+    def __init__(self) -> None:
+        super(TaskHandle, self).__init__()
+        self.raw: int
 
     @property
     def id(self) -> int:

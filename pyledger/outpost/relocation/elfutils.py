@@ -1,10 +1,12 @@
 # SPDX-FileCopyrightText: 2023 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
-import lief  # type: ignore
+import lief
 import os
 import json
 import codecs
+
+import typing
 
 from pyledger.outpost import logger
 
@@ -13,9 +15,9 @@ class Elf:
     SECTION_HEADER_SIZE = 16
 
     def __init__(self, elf: str, out: str) -> None:
-        self._name = os.path.basename(elf)
+        self._name: str = os.path.basename(elf)
         logger.info(f"Parsing {self.name} from {elf}")
-        self._elf = lief.parse(elf)
+        self._elf = typing.cast(lief.ELF.Binary, lief.parse(elf))
         self._output_path = out
         if self._elf.has_section(section_name=".note.package"):
             logger.debug("package metadata section found")
@@ -40,7 +42,7 @@ class Elf:
             return self._package_metadata["type"] == "outpost application"
         return False
 
-    def get_section_info(self, section_name: str) -> (int, int):
+    def get_section_info(self, section_name: str) -> tuple[int, int]:
         if not self._elf.has_section(section_name=section_name):
             raise ValueError
 
@@ -49,18 +51,18 @@ class Elf:
         size = section.size
         return (vma, size)
 
-    def get_symbol_address(self, symbol_name: str):
+    def get_symbol_address(self, symbol_name: str) -> int:
         if not self._elf.has_symbol(symbol_name):
             raise ValueError
         return self._elf.get_symbol(symbol_name).value
 
-    def get_symbol_offset_from_section(self, symbol_name: str, from_section_name: str):
+    def get_symbol_offset_from_section(self, symbol_name: str, from_section_name: str) -> int:
         section_vma, _ = self.get_section_info(from_section_name)
         sym_vma = self.get_symbol_address(symbol_name)
         return sym_vma - section_vma
 
-    def get_package_metadata(self, *args):
-        def _get_package_metadata(node, *args):
+    def get_package_metadata(self, *args: typing.Any) -> typing.Any:
+        def _get_package_metadata(node: dict, *args: typing.Any) -> typing.Any:
             if len(args) == 1:
                 return node[args[0]]
             else:
@@ -75,12 +77,12 @@ class SentryElf(Elf):
     def __init__(self, elf: str, out: str) -> None:
         super().__init__(elf, out)
 
-    def patch_task_list(self, task_meta_table) -> None:
+    def patch_task_list(self, task_meta_table: bytearray) -> None:
         tbl = self._elf.get_section(".task_list")
         assert tbl.size % len(task_meta_table) == 0
         task_meta_table.extend(bytes([0] * (tbl.size - len(task_meta_table))))
         assert len(task_meta_table) == tbl.size
-        tbl.content = task_meta_table
+        tbl.content = memoryview(task_meta_table)
 
 
 class AppElf(Elf):
@@ -221,7 +223,8 @@ class AppElf(Elf):
     def remove_notes(self) -> None:
         for note_name in [".note.gnu.build-id", ".note.package"]:
             note_vma, _ = self.get_section_info(note_name)
-            note_sym = None
+            note_sym: lief.ELF.Symbol
+
             for sym in self._elf.symbols:
                 if sym.value == note_vma:
                     note_sym = sym

@@ -17,9 +17,9 @@ if TYPE_CHECKING:
     from pyledger.outpost.outpost import Project
 
 
-def _get_project_elves(project: "Project"):
-    sentry = None
-    idle = None
+def _get_project_elves(project: "Project") -> tuple[SentryElf, Elf, list[AppElf]]:
+    sentry: SentryElf
+    idle: Elf
     apps = list()
 
     for elf in glob.glob(os.path.join(project.bindir, "*.elf")):
