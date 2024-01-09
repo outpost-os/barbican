@@ -59,7 +59,7 @@ class NinjaGenFile:
             f"build.ninja",
             "outpost_reconfigure",
             variables={"projectdir": project.topdir},
-            implicit=os.path.join(project.topdir, "project.toml")
+            implicit=os.path.join(project.topdir, "project.toml"),
         )
 
         # XXX:

@@ -18,10 +18,10 @@ EXIT_MODES = [
     EXIT_RESET,
 ]
 
+
 class JobFlags(cstruct.MemCStruct):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __def__ = """
-
     /**
      * These are job start mode possible values (bitfield)
      */
@@ -44,20 +44,19 @@ class JobFlags(cstruct.MemCStruct):
 
     @property
     def autostart_mode(self) -> int:
-        return self.raw & 0x1 == cstruct.getdef('JOB_FLAG_START_AUTO')
+        return self.raw & 0x1 == cstruct.getdef("JOB_FLAG_START_AUTO")
 
     @autostart_mode.setter
     def autostart_mode(self, auto: bool) -> None:
         start_mode = int()
-        self.raw = self.raw & 0xfffffffe
+        self.raw = self.raw & 0xFFFFFFFE
 
         if auto:
-            start_mode = cstruct.getdef('JOB_FLAG_START_AUTO')
+            start_mode = cstruct.getdef("JOB_FLAG_START_AUTO")
         else:
-            start_mode = cstruct.getdef('JOB_FLAG_START_NOAUTO')
+            start_mode = cstruct.getdef("JOB_FLAG_START_NOAUTO")
 
         self.raw = self.raw | (start_mode & 0x1)
-
 
     @property
     def exit_mode(self) -> int:
@@ -74,24 +73,22 @@ class JobFlags(cstruct.MemCStruct):
         }
 
         mode = _exit_mode[mode]
-        self.raw = self.raw & 0xfffffff1
+        self.raw = self.raw & 0xFFFFFFF1
         self.raw = self.raw | ((mode & 0x7) << 1)
 
+
 class TaskHandle(cstruct.MemCStruct):
-    """XXX: Task handle family is 0, rerun is a runtime counter for running index
-    """
+    """XXX: Task handle family is 0, rerun is a runtime counter for running index"""
+
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __def__ = """
-
     struct {
         uint32_t raw;
     }
     """
 
-
     _id_shift = 13
-    _id_mask = (0x0000ffff << _id_shift)
-
+    _id_mask = 0x0000FFFF << _id_shift
 
     @property
     def id(self) -> int:
@@ -102,11 +99,13 @@ class TaskHandle(cstruct.MemCStruct):
         self.raw = self.raw & (~self._id_mask)
         self.raw = self.raw | (id << self._id_shift & (self._id_mask))
 
+
 class TaskMeta(cstruct.MemCStruct):
     """Task meta structure with padding
     As a variable of type TaskMeta is align on 8 bytes boundary (due to uint64 first field)
     There is padding at the end to align size on 8 bytes to.
     """
+
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __def__ = """
 

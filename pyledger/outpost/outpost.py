@@ -34,7 +34,6 @@ class Project:
         self._stagingdir = os.path.join(self.topdir, "staging")
         self._outdir = os.path.join(self.topdir, "out")
 
-
         with open(toml_filename, "rb") as f:
             self._toml = tomllib.load(f)
 
@@ -116,56 +115,7 @@ class Project:
 
     def relocate(self) -> None:
         relocate_project(self)
-        # logger.info(f"{self.name} relocation")
 
-        # sentry = None
-        # idle = None
-        # apps = list()
-
-        # for elf in glob.glob(os.path.join(self.bindir, "*.elf")):
-        #     name = os.path.basename(elf)
-        #     if name == "sentry-kernel.elf":
-        #         sentry = elfutils.Elf(elf, os.path.join(self.outdir, name))
-        #     elif name == "idle.elf":
-        #         idle = elfutils.Elf(elf, os.path.join(self.outdir, name))
-        #     else:
-        #         apps.append(elfutils.AppElf(elf, os.path.join(self.outdir, name)))
-
-        # # Sort app list from bigger flash footprint to lesser
-        # apps.sort(key=lambda x:x.flash_size, reverse=True)
-
-        # # Beginning of user app flash and ram are after idle reserved memory in sentry kernel
-        # idle_task_vma, idle_task_size = sentry.get_section_info(".idle_task")
-        # idle_vma, idle_size = sentry.get_section_info("._idle")
-
-        # next_task_srom = idle_task_vma + pow2_round_up(idle_task_size)
-        # next_task_sram = idle_vma + pow2_round_up(idle_size)
-
-        # for app in apps:
-        #     app.relocate(next_task_srom, next_task_sram)
-        #     next_task_srom = next_task_srom + pow2_round_up(app.flash_size)
-        #     next_task_sram = next_task_sram + pow2_round_up(app.ram_size)
-        #     app.save()
-
-        # print(f"{apps[0].flash_size:02x}")
-        # print(f"{apps[0].ram_size:02x}")
-
-        # vma, size = app.get_section_info('.text')
-        # print(f"vma {vma:02x}, size {size:02x}")
-        # vma, size = app.get_section_info('.data')
-        # print(f"vma {vma:02x}, size {size:02x}")
-        # print(f"{app.get_symbol_address('_sidata'):02x}")
-        # print(f"{app.get_symbol_offset_from_section('_sidata', '.text'):02x}")
-        # XXX
-        # get elf list, we must have, at least, sentry kernel and Idle
-        # and apps. Do we assume one elf per app entry in toml, or is it possible
-        # to have more than one elf ?
-
-        # Parse all elf
-        # Sort on text size
-        # replace/align app
-        # gen task_meta and kern fixup
-        # make final bin
 
 def download(project: Project) -> None:
     project.download()
@@ -177,6 +127,7 @@ def setup(project: Project) -> None:
 
 def relocate(project: Project) -> None:
     project.relocate()
+
 
 def _main():
     from argparse import ArgumentParser
@@ -205,13 +156,15 @@ def _main():
         "setup", help="setup help", parents=[common_parser]
     )
     setup_cmd_parser.set_defaults(func=setup)
-    setup_cmd_parser.add_argument("projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?")
-
-    relocate_cmd = cmd_subparsers.add_parser(
-        "relocate", help="reloc help", parents=[common_parser]
+    setup_cmd_parser.add_argument(
+        "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
     )
+
+    relocate_cmd = cmd_subparsers.add_parser("relocate", help="reloc help", parents=[common_parser])
     relocate_cmd.set_defaults(func=relocate)
-    relocate_cmd.add_argument("projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?")
+    relocate_cmd.add_argument(
+        "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
+    )
 
     args = parser.parse_args()
 

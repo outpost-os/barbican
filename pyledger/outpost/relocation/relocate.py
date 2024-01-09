@@ -11,6 +11,7 @@ from ..utils import pow2_round_up, align_to
 
 from pyledger.outpost import logger  # type: ignore
 
+
 def _get_project_elves(project):
     sentry = None
     idle = None
@@ -37,7 +38,7 @@ def _relocate_apps(sentry, apps) -> None:
     #  Note this is for PMSAv7 only (power of 2, start addr align on size multiple),
 
     # Sort app list from bigger flash footprint to lesser
-    apps.sort(key=lambda x:x.flash_size, reverse=True)
+    apps.sort(key=lambda x: x.flash_size, reverse=True)
 
     # Beginning of user app flash and ram are after idle reserved memory in sentry kernel
     idle_task_vma, idle_task_size = sentry.get_section_info(".idle_task")
@@ -45,8 +46,8 @@ def _relocate_apps(sentry, apps) -> None:
 
     # next_task_srom = idle_task_vma + pow2_round_up(idle_task_size)
     # next_task_sram = idle_vma + pow2_round_up(idle_size)
-    next_task_srom = idle_task_vma + (32*1024)
-    next_task_sram = idle_vma + (32*1024)
+    next_task_srom = idle_task_vma + (32 * 1024)
+    next_task_sram = idle_vma + (32 * 1024)
 
     for app in apps:
         # In order to comply w/ PMSAv7
@@ -58,14 +59,19 @@ def _relocate_apps(sentry, apps) -> None:
         ram_saddr = align_to(next_task_sram, ram_size)
 
         if flash_saddr != next_task_srom:
-            logger.warning(f"MPU flash region misaligned, padded {flash_saddr - next_task_srom} bytes")
+            logger.warning(
+                f"MPU flash region misaligned, padded {flash_saddr - next_task_srom} bytes"
+            )
 
         if ram_saddr != next_task_sram:
-            logger.warning(f"MPU flash region misaligned, padded {ram_saddr - next_task_sram} bytes")
+            logger.warning(
+                f"MPU flash region misaligned, padded {ram_saddr - next_task_sram} bytes"
+            )
 
         app.relocate(flash_saddr, ram_saddr)
         next_task_srom = flash_saddr + flash_size
         next_task_sram = ram_saddr + ram_size
+
 
 def _generate_task_meta_table(apps) -> bytearray:
     task_meta_tbl = bytearray()
@@ -77,7 +83,7 @@ def _generate_task_meta_table(apps) -> bytearray:
         meta.handle.id = random.getrandbits(16)
         meta.priority = int(app.get_package_metadata("task", "priority"), base=10)
         meta.quantum = int(app.get_package_metadata("task", "quantum"), base=10)
-        meta.capabilities = 0 # XXX todo
+        meta.capabilities = 0  # XXX todo
 
         meta.flags.autostart_mode = bool(app.get_package_metadata("task", "auto_start"))
 
@@ -97,9 +103,8 @@ def _generate_task_meta_table(apps) -> bytearray:
         meta.s_text, text_size = app.get_section_info(".text")
         _, ARM_size = app.get_section_info(".ARM")
         meta.text_size = align_to(text_size, 4) + align_to(ARM_size, 4)
-        print(f"{align_to(text_size, 4):#02x} + {align_to(ARM_size, 4):#02x} = {meta.text_size:#02x}")
         meta.s_got, meta.got_size = app.get_section_info(".got")
-        #_, meta.rodata_size = app.get_section_info(".rodata") # XXX: rodata are included in .text section
+        # _, meta.rodata_size = app.get_section_info(".rodata") # XXX: rodata are included in .text section
         meta.s_svcexchange, _ = app.get_section_info(".svcexchange")
         _, meta.data_size = app.get_section_info(".data")
         _, meta.bss_size = app.get_section_info(".bss")
@@ -119,14 +124,12 @@ def _generate_task_meta_table(apps) -> bytearray:
     return task_meta_tbl
 
 
-
 def relocate_project(project) -> None:
     logger.info(f"{project.name} relocation")
 
     sentry, idle, apps = _get_project_elves(project)
     _relocate_apps(sentry, apps)
     task_meta_tbl = _generate_task_meta_table(apps)
-    print(task_meta_tbl.hex(':'))
     sentry.patch_task_list(task_meta_tbl)
 
     sentry.save()

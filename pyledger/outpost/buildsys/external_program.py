@@ -20,9 +20,11 @@ _EXTERNAL_PROGRAMS_NAME = [
 
 _EXTERNAL_PROGRAMS = dict()
 
+
 def external_programs_initialize() -> None:
     for name in _EXTERNAL_PROGRAMS_NAME:
         _EXTERNAL_PROGRAMS[name] = find_program(name)
+
 
 def external_program_get(name: str) -> str | None:
     return _EXTERNAL_PROGRAMS.get(name)

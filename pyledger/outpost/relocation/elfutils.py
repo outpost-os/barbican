@@ -8,6 +8,7 @@ import codecs
 
 from pyledger.outpost import logger
 
+
 class Elf:
     SECTION_HEADER_SIZE = 16
 
@@ -18,8 +19,10 @@ class Elf:
         self._output_path = out
         if self._elf.has_section(section_name=".note.package"):
             logger.debug("package metadata section found")
-            raw_data = self._elf.get_section(".note.package").content[Elf.SECTION_HEADER_SIZE:]
-            self._package_metadata = json.loads(codecs.decode(bytes(raw_data), 'utf-8').strip('\x00'))
+            raw_data = self._elf.get_section(".note.package").content[Elf.SECTION_HEADER_SIZE :]
+            self._package_metadata = json.loads(
+                codecs.decode(bytes(raw_data), "utf-8").strip("\x00")
+            )
         else:
             self._package_metadata = None
 
@@ -37,7 +40,7 @@ class Elf:
             return self._package_metadata["type"] == "outpost application"
         return False
 
-    def get_section_info(self, section_name: str) -> (int,int):
+    def get_section_info(self, section_name: str) -> (int, int):
         if not self._elf.has_section(section_name=section_name):
             raise ValueError
 
@@ -64,6 +67,7 @@ class Elf:
                 key, *others = args
                 node = node[key]
                 return _get_package_metadata(node, *others)
+
         return _get_package_metadata(self._package_metadata, *args)
 
 
@@ -81,8 +85,8 @@ class SentryElf(Elf):
 
 class AppElf(Elf):
     # Section to relocate
-    FLASH_SECTIONS = [ ".text", ".ARM" ]
-    RAM_SECTIONS = [ ".svcexchange", ".got", ".data", ".bss" ]
+    FLASH_SECTIONS = [".text", ".ARM"]
+    RAM_SECTIONS = [".svcexchange", ".got", ".data", ".bss"]
 
     def __init__(self, elf: str, out: str) -> None:
         """Initialize an Outpost application Elf representation
@@ -132,12 +136,13 @@ class AppElf(Elf):
         return ram_size
 
     def relocate(self, srom, sram):
-
         def _relocate_sections(sections, saddr):
             next_saddr = saddr
             for section_name in sections:
                 section = self._elf.get_section(section_name)
-                logger.debug(f"relocating {section_name}: {section.virtual_address:02x} -> {next_saddr:02x}")
+                logger.debug(
+                    f"relocating {section_name}: {section.virtual_address:02x} -> {next_saddr:02x}"
+                )
                 section.virtual_address = next_saddr
                 next_saddr = next_saddr + section.size
 
@@ -152,10 +157,10 @@ class AppElf(Elf):
 
             data_section = self._elf.get_section(".got")
             data_section.segments[0].virtual_address = data_section.virtual_address
-            data_section.segments[0].physical_address = self.get_symbol_address('_sigot')
+            data_section.segments[0].physical_address = self.get_symbol_address("_sigot")
 
         def _symtab_fixup():
-            """ Fixup symtab with relocated addresses"""
+            """Fixup symtab with relocated addresses"""
 
             s_rom = self._prev_sections[".text"][0]
             e_rom = self._elf.get_symbol("_erom").value
@@ -187,9 +192,11 @@ class AppElf(Elf):
             patched_got = bytearray()
 
             for i in range(0, len(got.content), chunk_size):
-                addr = int.from_bytes(got.content[i:i+chunk_size], "little")
+                addr = int.from_bytes(got.content[i : i + chunk_size], "little")
                 if s_ram <= addr <= e_ram:
-                    logger.debug(f"patching got entry {(got.virtual_address + i):02x}: {addr:02x} -> {(addr + ram_offset):02x}")
+                    logger.debug(
+                        f"patching got entry {(got.virtual_address + i):02x}: {addr:02x} -> {(addr + ram_offset):02x}"
+                    )
                     addr = addr + ram_offset
                 patched_got += addr.to_bytes(chunk_size, "little")
 
@@ -197,8 +204,7 @@ class AppElf(Elf):
 
         def _heap_fixup():
             _eheap_sym = self._elf.get_symbol("_eheap")
-            _eheap_sym.value =  _eheap_sym.value + self.heap_size
-
+            _eheap_sym.value = _eheap_sym.value + self.heap_size
 
         logger.info(f"relocating {self.name}")
         logger.info(f" - flash start address {srom:#010x}")
@@ -248,7 +254,9 @@ class AppElf(Elf):
                     delta = sections[0].file_offset - offset
                     for section in sections:
                         offset = section.file_offset
-                        logger.debug(f" - section {section.name} offset: {offset:02x} -> {offset - delta:02x}")
+                        logger.debug(
+                            f" - section {section.name} offset: {offset:02x} -> {offset - delta:02x}"
+                        )
                         section.file_offset = offset - delta
                     # XXX:
                     # left shift segment raw content from delta
