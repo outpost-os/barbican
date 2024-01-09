@@ -145,6 +145,11 @@ def _main():
         default="info",
     )
 
+    project_parser = common_parser.add_argument_group("project arguments")
+    project_parser.add_argument(
+        "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
+    )
+
     cmd_subparsers = parser.add_subparsers(required=True, help="command help")
 
     download_cmd_parser = cmd_subparsers.add_parser(
@@ -156,15 +161,9 @@ def _main():
         "setup", help="setup help", parents=[common_parser]
     )
     setup_cmd_parser.set_defaults(func=setup)
-    setup_cmd_parser.add_argument(
-        "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
-    )
 
     relocate_cmd = cmd_subparsers.add_parser("relocate", help="reloc help", parents=[common_parser])
     relocate_cmd.set_defaults(func=relocate)
-    relocate_cmd.add_argument(
-        "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
-    )
 
     args = parser.parse_args()
 
