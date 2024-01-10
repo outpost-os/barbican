@@ -56,7 +56,7 @@ class NinjaGenFile:
 
     def add_outpost_targets(self, project: "Project") -> None:
         self._ninja.build(
-            f"build.ninja",
+            "build.ninja",
             "outpost_reconfigure",
             variables={"projectdir": project.topdir},
             implicit=os.path.join(project.topdir, "project.toml"),

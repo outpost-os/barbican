@@ -2,3 +2,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .relocate import relocate_project
+
+__all__ = ["relocate_project"]

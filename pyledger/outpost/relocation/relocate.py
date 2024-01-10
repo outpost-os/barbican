@@ -96,7 +96,7 @@ def _generate_task_meta_table(apps: list[AppElf]) -> bytearray:
             enabled = False
             try:
                 enabled = bool(app.get_package_metadata("task", f"exit_{mode}"))
-            except:
+            except Exception:
                 pass
             finally:
                 if enabled:
@@ -109,7 +109,8 @@ def _generate_task_meta_table(apps: list[AppElf]) -> bytearray:
         _, ARM_size = app.get_section_info(".ARM")
         meta.text_size = align_to(text_size, 4) + align_to(ARM_size, 4)
         meta.s_got, meta.got_size = app.get_section_info(".got")
-        # _, meta.rodata_size = app.get_section_info(".rodata") # XXX: rodata are included in .text section
+        # XXX: rodata are included in .text section
+        # _, meta.rodata_size = app.get_section_info(".rodata")
         meta.s_svcexchange, _ = app.get_section_info(".svcexchange")
         _, meta.data_size = app.get_section_info(".data")
         _, meta.bss_size = app.get_section_info(".bss")

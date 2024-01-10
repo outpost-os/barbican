@@ -12,9 +12,9 @@ def test_jobflags_struct_size():
 def test_jobflags_autostart_mode():
     job_flags = JobFlags()
     job_flags.autostart_mode = True
-    assert job_flags.autostart_mode == True
+    assert job_flags.autostart_mode
     job_flags.autostart_mode = False
-    assert job_flags.autostart_mode == False
+    assert not job_flags.autostart_mode
 
 
 def test_jobflags_exit_mode():

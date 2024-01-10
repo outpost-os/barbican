@@ -9,7 +9,6 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
-import glob
 import os
 import logging
 import pathlib

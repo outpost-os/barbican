@@ -197,7 +197,8 @@ class AppElf(Elf):
                 addr = int.from_bytes(got.content[i : i + chunk_size], "little")
                 if s_ram <= addr <= e_ram:
                     logger.debug(
-                        f"patching got entry {(got.virtual_address + i):02x}: {addr:02x} -> {(addr + ram_offset):02x}"
+                        f"patching got entry {(got.virtual_address + i):02x}: {addr:02x} "
+                        f"-> {(addr + ram_offset):02x}"
                     )
                     addr = addr + ram_offset
                 patched_got += addr.to_bytes(chunk_size, "little")
@@ -258,7 +259,8 @@ class AppElf(Elf):
                     for section in sections:
                         offset = section.file_offset
                         logger.debug(
-                            f" - section {section.name} offset: {offset:02x} -> {offset - delta:02x}"
+                            f" - section {section.name} offset: {offset:02x} -> "
+                            f"{offset - delta:02x}"
                         )
                         section.file_offset = offset - delta
                     # XXX:

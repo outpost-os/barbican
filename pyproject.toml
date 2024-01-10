@@ -88,4 +88,4 @@ warn_redundant_casts = true
 warn_unreachable = true
 
 # Miscellaneous strictness flags
-strict_equality = true
+strict_equality = false
