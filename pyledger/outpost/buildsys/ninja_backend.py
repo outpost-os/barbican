@@ -17,7 +17,6 @@ class NinjaGenFile:
         external_programs_initialize()
         self._raw_file = open(filename, "w")
         self._ninja = ninja_syntax.Writer(self._raw_file)
-        self._ninja.comment("SPDX-License-Identifier: Apache-2.0")
         self._ninja.comment("Outpost build.ninja")
         self._ninja.comment("Auto generated file **DO NOT EDIT**")
 
