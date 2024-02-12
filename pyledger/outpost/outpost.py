@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-FileCopyrightText: 2023-2024 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
 # XXX:
@@ -9,9 +9,12 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
+from argparse import ArgumentParser
 import os
 import logging
 import pathlib
+import sys
+import typing as T
 
 from . import logger  # type: ignore
 from .package import Package
@@ -128,11 +131,8 @@ def relocate(project: Project) -> None:
     project.relocate()
 
 
-def _main():
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser(prog="outpost", add_help=False)
-
+def common_argument_parser() -> ArgumentParser:
+    """Argument parser for logging infrastrucutre"""
     common_parser = ArgumentParser(add_help=False)
     loglevel_parser = common_parser.add_argument_group("logging")
     loglevel_parser.add_argument("-q", "--quiet", action="store_true")
@@ -149,8 +149,19 @@ def _main():
         "projectdir", type=pathlib.Path, action="store", default=os.getcwd(), nargs="?"
     )
 
-    cmd_subparsers = parser.add_subparsers(required=True, help="command help")
+    return common_parser
 
+
+def main_argument_parser() -> ArgumentParser:
+    """Argument parser for main entrypoint"""
+    parser = ArgumentParser(prog="outpost", add_help=True)
+    common_parser = common_argument_parser()
+
+    cmd_subparsers = parser.add_subparsers(
+        required=True, title="Commands", dest="command", description="Execute one of the following"
+    )
+
+    # TODO: each command in a dedicated file w/ dedicate add_arg and run method
     download_cmd_parser = cmd_subparsers.add_parser(
         "download", help="download help", parents=[common_parser]
     )
@@ -164,8 +175,12 @@ def _main():
     relocate_cmd = cmd_subparsers.add_parser("relocate", help="reloc help", parents=[common_parser])
     relocate_cmd.set_defaults(func=relocate)
 
-    args = parser.parse_args()
+    return parser
 
+
+def run_command() -> None:
+    """Run an outpost command"""
+    args = main_argument_parser().parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)
     elif args.quiet:
@@ -178,11 +193,46 @@ def _main():
     args.func(project)
 
 
-def main():
+def run_internal_command(cmd: str, argv: T.List[str]) -> None:
+    """run an internal outpost command
+
+    :param cmd: internal command name
+    :type cmd: str
+    :param argv: internal command arguments
+    :type argv: List[str], optional
+
+    Each internal commands are in the `_internal` subdir and each module is named with the
+    command name. Each internal must accept an argument of type List[str].
+    """
+    import importlib
+
+    module = importlib.import_module("pyledger.outpost._internals." + cmd)
+    module.run(argv)
+
+
+def main() -> None:
+    """Outpost script entrypoint
+
+    Execute an outpost command or an internal command.
+    Outpost commands are user entrypoint, dedicated help can be printed in terminal.
+    Outpost internal commands are used by build system backend for internal build steps,
+    those are not available through user help.
+
+    command usage:
+     `outpost <cmd> [option(s)]`
+    internal command usage:
+     `outpost --internal <internal_cmd> [option(s)]`
+    """
     try:
-        _main()
+        if len(sys.argv) >= 2 and sys.argv[1] == "--internal":
+            if len(sys.argv) == 2:
+                raise ValueError("missing internal command")
+            run_internal_command(sys.argv[2], sys.argv[3:])
+        else:
+            run_command()
+
     except Exception as e:
-        logger.critical(f"Fatal error: {e}")
+        logger.critical(str(e))
         exit(1)
     else:
         exit(0)
