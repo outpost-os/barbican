@@ -3,18 +3,19 @@
 
 import os
 import ninja_syntax  # type: ignore
-from .external_program import external_programs_initialize, external_program_get
 
 from typing import TYPE_CHECKING
 
+
+from ..utils.environment import find_program
+
 if TYPE_CHECKING:
-    from pyledger.outpost.package import Package
-    from pyledger.outpost.outpost import Project
+    from ..package import Package
+    from ..outpost import Project
 
 
 class NinjaGenFile:
     def __init__(self, filename):
-        external_programs_initialize()
         self._raw_file = open(filename, "w")
         self._ninja = ninja_syntax.Writer(self._raw_file)
         self._ninja.comment("Outpost build.ninja")
@@ -29,10 +30,10 @@ class NinjaGenFile:
 
     def _add_common_variables(self) -> None:
         self._ninja.newline()
-        self._ninja.variable("ninjabuild", external_program_get("ninja"))
-        self._ninja.variable("mesonbuild", external_program_get("meson"))
-        self._ninja.variable("outpost", external_program_get("outpost"))
-        self._ninja.variable("srec_cat", external_program_get("srec_cat"))
+        self._ninja.variable("ninjabuild", find_program("ninja"))
+        self._ninja.variable("mesonbuild", find_program("meson"))
+        self._ninja.variable("outpost", find_program("outpost"))
+        self._ninja.variable("srec_cat", find_program("srec_cat"))
         # FIXME: get this from toml
         self._ninja.variable("crossfile", "arm-none-eabi-gcc.ini")
 
