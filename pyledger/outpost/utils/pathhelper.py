@@ -11,7 +11,8 @@ import os
 from pathlib import Path
 import typing as T
 
-class ProjectPathHelper():
+
+class ProjectPathHelper:
     def __init__(self, projectdir: os.PathLike, prefix: T.Optional[os.PathLike] = None) -> None:
         """Constructor
 
@@ -25,8 +26,9 @@ class ProjectPathHelper():
         Convert argument projectdir to canonical path
         """
         self._projectdir: Path = Path(projectdir).resolve(strict=True)
-        self._prefix: Path = prefix if prefix is not None else Path("usr", "local")
-        self._outputdir: Path = Path(self._projectdir, "output")
+        self._prefix: Path = Path(prefix) if prefix is not None else Path("usr", "local")
+        # XXX: use "output" here
+        self._outputdir: Path = Path(self._projectdir, ".")
         self._sourcedir: Path = Path(self._outputdir, "src")
         self._builddir: Path = Path(self._outputdir, "build")
         self._stagingdir: Path = Path(self._outputdir, "staging")
@@ -34,12 +36,12 @@ class ProjectPathHelper():
         self._downloaddir: Path = Path(self._outputdir, "dl")
 
     def create_outputdir_layout(self) -> None:
-        self._outputdir.mkdir(parent=True, exist_ok=True)
-        self._sourcedir.mkdir(parent=True, exist_ok=True)
-        self._builddir.mkdir(parent=True, exist_ok=True)
-        self._stagingdir.mkdir(parent=True, exist_ok=True)
-        self._imagedir.mkdir(parent=True, exist_ok=True)
-        self._downloaddir.mkdir(parent=True, exist_ok=True)
+        self._outputdir.mkdir(parents=True, exist_ok=True)
+        self._sourcedir.mkdir(parents=True, exist_ok=True)
+        self._builddir.mkdir(parents=True, exist_ok=True)
+        self._stagingdir.mkdir(parents=True, exist_ok=True)
+        self._imagedir.mkdir(parents=True, exist_ok=True)
+        self._downloaddir.mkdir(parents=True, exist_ok=True)
 
     @property
     def projectdir(self) -> Path:
