@@ -109,10 +109,21 @@ class Project:
     def setup(self) -> None:
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.builddir, "build.ninja"))
+
+        ninja.add_outpost_rules()
+        ninja.add_outpost_internals_rules()
         ninja.add_outpost_targets(self)
         ninja.add_meson_rules()
         for p in self._packages:
             ninja.add_meson_package(p)
+
+        ninja.add_internal_gen_memory_layout_target(
+            output=pathlib.Path(self.builddir, "layout.json"),
+            projectdir=self.topdir,
+            prefix=self.INSTALL_PREFIX,
+            dependencies=self._packages,
+        )
+
         ninja.close()
 
     def relocate(self) -> None:
@@ -233,6 +244,7 @@ def main() -> None:
 
     except Exception as e:
         logger.critical(str(e))
+        raise
         exit(1)
     else:
         exit(0)
