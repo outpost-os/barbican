@@ -15,7 +15,7 @@ from pathlib import Path
 import typing as T
 
 from ..relocation.elfutils import SentryElf, AppElf
-from ..utils.memory_layout import MemoryRegion, MemoryLayout
+from ..utils.memory_layout import MemoryType, MemoryRegion, MemoryLayout
 from ..utils.pathhelper import ProjectPathHelper
 from ..utils import pow2_round_up, align_to
 
@@ -39,15 +39,15 @@ def _get_project_elves(bindir: Path) -> T.Tuple[SentryElf, T.List[AppElf]]:
 def _add_kernel_regions(layout: MemoryLayout, sentry: SentryElf) -> None:
     text_start_addr, _ = sentry.get_section_info(".isr_vector")
     ram_start_addr, _ = sentry.get_section_info(".bss")
-    layout.append(MemoryRegion("kernel text", text_start_addr, sentry.flash_size))
-    layout.append(MemoryRegion("kernel ram", ram_start_addr, sentry.ram_size))
+    layout.append(MemoryRegion("kernel", MemoryType.TEXT, text_start_addr, sentry.flash_size))
+    layout.append(MemoryRegion("kernel", MemoryType.RAM, ram_start_addr, sentry.ram_size))
 
 
 def _add_idle_regions(layout: MemoryLayout, sentry: SentryElf) -> T.Tuple[int, int]:
     idle_text_saddr, idle_text_size = sentry.get_section_info(".idle_task")
     idle_ram_saddr, idle_ram_size = sentry.get_section_info("._idle")
-    layout.append(MemoryRegion("idle text", idle_text_saddr, idle_text_size))
-    layout.append(MemoryRegion("idle ram", idle_ram_saddr, idle_ram_size))
+    layout.append(MemoryRegion("idle", MemoryType.TEXT, idle_text_saddr, idle_text_size))
+    layout.append(MemoryRegion("idle", MemoryType.RAM, idle_ram_saddr, idle_ram_size))
 
     return idle_text_saddr + idle_text_size, idle_ram_saddr + idle_ram_size
 
@@ -64,8 +64,8 @@ def _add_app_regions(
     flash_saddr = align_to(task_text, flash_size)
     ram_saddr = align_to(task_ram, ram_size)
 
-    layout.append(MemoryRegion(f"{app.name} text", flash_saddr, flash_size))
-    layout.append(MemoryRegion(f"{app.name} ram", ram_saddr, ram_size))
+    layout.append(MemoryRegion(f"{app.name}", MemoryType.TEXT, flash_saddr, flash_size))
+    layout.append(MemoryRegion(f"{app.name}", MemoryType.RAM, ram_saddr, ram_size))
 
     return flash_saddr + flash_size, ram_saddr + ram_size
 

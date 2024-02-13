@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections import UserList, UserDict
+from enum import Enum
 import json
 from os import PathLike
 import typing as T
@@ -14,6 +15,11 @@ import typing as T
 # TODO: Add JsonDecoder
 
 
+class MemoryType(Enum):
+    TEXT = "text"
+    RAM = "ram"
+
+
 class MemoryRegion(UserDict):
     """Memory region user defined dictionary
 
@@ -24,7 +30,7 @@ class MemoryRegion(UserDict):
      - subregion: subset of inner region, optional
     """
 
-    def __init__(self, name: str, start_addr: int, size: int) -> None:
+    def __init__(self, name: str, type: MemoryType, start_addr: int, size: int) -> None:
         """Initialiazer
 
         Parameters are defined at initialization time and are non mutable
@@ -33,6 +39,8 @@ class MemoryRegion(UserDict):
         ----------
         name
             memory region name
+        type
+            Type of memory region (i.e. text or ram)
         start_addr
             memory region start address
         size
@@ -40,6 +48,7 @@ class MemoryRegion(UserDict):
         """
         super(MemoryRegion, self).__init__()
         self.data["name"] = name
+        self.data["type"] = type
         self.data["start_addr"] = start_addr
         self.data["size"] = size
 
@@ -88,6 +97,8 @@ class _JSONEncoder(json.JSONEncoder):
         """
         if isinstance(obj, (MemoryLayout, MemoryRegion)):
             return obj.data
+        if isinstance(obj, MemoryType):
+            return obj.value
         return super().default(obj)
 
 
