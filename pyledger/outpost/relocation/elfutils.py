@@ -278,8 +278,12 @@ class AppElf(Elf):
                     delta = sections[0].file_offset - offset
                     for section in sections:
                         offset = section.file_offset
+                        # XXX
+                        #  Some types seem to be lost, we probably need some additional hints
+                        #  the `!r` only silents the type check error (i.e. str | bytes format in
+                        #  log message)
                         logger.debug(
-                            f" - section {section.name} offset: {offset:02x} -> "
+                            f" - section {section.name!r} offset: {offset:02x} -> "
                             f"{offset - delta:02x}"
                         )
                         section.file_offset = offset - delta

@@ -13,23 +13,13 @@ _PROGRAM_CACHE_DICT: dict[str | bytes, str | bytes] = {}
 
 
 @T.overload
-def find_program(name: str) -> str:
-    ...
-
-
+def find_program(name: str) -> str: ...
 @T.overload
-def find_program(name: bytes) -> bytes:
-    ...
-
-
+def find_program(name: bytes) -> bytes: ...
 @T.overload
-def find_program(name: str, path: T.Optional[Path]) -> str:
-    ...
-
-
+def find_program(name: str, path: T.Optional[Path]) -> str: ...
 @T.overload
-def find_program(name: bytes, path: T.Optional[Path]) -> bytes:
-    ...
+def find_program(name: bytes, path: T.Optional[Path]) -> bytes: ...
 
 
 def find_program(name: str | bytes, path: T.Optional[Path] = None) -> str | bytes:
