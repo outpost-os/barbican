@@ -62,6 +62,7 @@ class NinjaGenFile:
 
         internal_commands = {
             "gen_memory_layout": "--prefix=$prefix $out $projectdir",
+            "capture_out": "$out $cmdline",
             # TODO: complete list
         }
 
@@ -150,6 +151,14 @@ class NinjaGenFile:
         )
         self._ninja.newline()
         self._ninja.build(f"{package.name}_setup", "phony", f"{package.builddir}/build.ninja")
+        self._ninja.newline()
+        self._ninja.build(
+            f"{os.path.join(package.parent.builddir, package.name)}_introspect.json",
+            "capture_out",
+            variables={
+                "cmdline": f"$mesonbuild introspect --all -i -f --backend ninja {package.builddir}"
+            },
+        )
         self._ninja.newline()
         self._ninja.build(
             f"{package.name}_compile",
