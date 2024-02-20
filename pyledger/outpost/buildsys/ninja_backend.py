@@ -61,9 +61,14 @@ class NinjaGenFile:
             )
 
         internal_commands = {
-            "gen_memory_layout": "--prefix=$prefix $out $projectdir",
             "capture_out": "$out $cmdline",
-            # TODO: complete list
+            "gen_ldscript": "--name=$name $in $out",
+            "gen_memory_layout": "--prefix=$prefix $out $projectdir",
+            "gen_task_metadata_bin": "$out $in",
+            "kernel_fixup": "$out $in",
+            "objcopy": "$out $in --format=$format $extra_option",
+            "relink_elf": "$out $in --linkerscript=$lnk $extra_option",
+            "srec_cat": "--format=$format $out $in",
         }
 
         for command, args in internal_commands.items():
