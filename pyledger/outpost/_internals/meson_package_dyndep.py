@@ -45,28 +45,32 @@ def _gen_ninja_dyndep_file(
     For compile target, build system files and sources file are needed as implicit inputs.
     Files to be installed are implicit output (resp. inputs) of compile (resp. install) command.
     ..notes: if inner build system files change, a reconfigure and rebuild is triggered.
-    ..warning: some outputs are internal targets input, thus remove installed file from implicit
+    ..warning: some internal target are inputs for another target, thus remove those from implicit
     inputs.
     """
 
     compile_target = f"{package}_compile.stamp"
     install_target = f"{package}_install.stamp"
 
-    package_buildsys_files = introspect["buildsystem_files"]
-    package_sources = []
+    buildsys_files = introspect["buildsystem_files"]
+
+    # all package source files
+    sources = []
+    # internal target filename (to be removed from sources)
+    filenames = []
     for target in introspect["targets"]:
+        if "filename" in target:
+            filenames.extend(target["filename"])
         if "target_sources" in target:
             for target_sources in target["target_sources"]:
                 if "sources" in target_sources:
-                    package_sources.extend(target_sources["sources"])
-                if "generated_sources" in target_sources:
-                    package_sources.extend(target_sources["generated_sources"])
+                    sources.extend(target_sources["sources"])
 
     installed = introspect["installed"]
 
     compile_implicit_outputs = set(installed.keys())
-    compile_implicit_inputs = set(package_buildsys_files + package_sources)
-    compile_implicit_inputs.difference_update(compile_implicit_outputs)
+    compile_implicit_inputs = set(buildsys_files + sources)
+    compile_implicit_inputs.difference_update(set(filenames))
 
     install_implicit_inputs = compile_implicit_outputs
     install_implicit_outputs = set([stagingdir / f[1:] for f in installed.values()])
