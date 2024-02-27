@@ -30,8 +30,8 @@ def run_objcopy(objcopy: str, input: Path, output: Path, bfdname: str) -> None:
 
 def run(argv: T.List[str]) -> None:
     parser = ArgumentParser()
-    parser.add_argument("output", type=Path, help="output elf file")
-    parser.add_argument("input", type=Path, help="partially linked input elf")
+    parser.add_argument("output", type=Path, help="output file")
+    parser.add_argument("input", type=Path, help="input elf file")
     parser.add_argument(
         "-f", "--format", type=str, choices=["ihex"], required=True, help="output format"
     )
