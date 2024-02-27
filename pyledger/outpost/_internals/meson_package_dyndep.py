@@ -106,6 +106,8 @@ def run_meson_package_dyndep(
     package_introspection = json.loads(proc_return.stdout)
 
     _gen_ninja_dyndep_file(name, package_introspection, stagingdir, dyndep)
+    with outfile.open("w") as out:
+        out.write(json.dumps(package_introspection, indent=4))
 
 
 def run(argv: T.List[str]) -> None:
