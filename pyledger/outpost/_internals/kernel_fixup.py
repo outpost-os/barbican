@@ -13,10 +13,10 @@ def run_kernel_fixup(kern_input: Path, kern_output: Path, metadata: list[Path]) 
     task_meta_tbl = bytearray()
 
     for datum in metadata:
-        with datum.open("wb") as d:
-            task_meta_tbl.extend(d.read())
+        task_meta_tbl.extend(datum.read_bytes())
 
     kernel.patch_task_list(task_meta_tbl)
+    kernel.save()
 
 
 def run(argv: T.List[str]) -> None:
