@@ -20,11 +20,12 @@ from ..utils.pathhelper import ProjectPathHelper
 from ..utils import pow2_round_up, align_to
 
 
-def _get_project_elves(bindir: Path) -> T.Tuple[SentryElf, T.List[AppElf]]:
+def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]]:
     sentry: SentryElf
     apps: T.List[AppElf] = []
 
-    for elf in bindir.glob("*.elf"):
+    for elf in exelist:
+        print(elf)
         name = elf.stem
         if name == "sentry-kernel":
             sentry = SentryElf(str(elf), None)
@@ -39,6 +40,7 @@ def _get_project_elves(bindir: Path) -> T.Tuple[SentryElf, T.List[AppElf]]:
 def _add_kernel_regions(layout: MemoryLayout, sentry: SentryElf) -> None:
     text_start_addr, _ = sentry.get_section_info(".isr_vector")
     ram_start_addr, _ = sentry.get_section_info(".bss")
+    # XXX: hardcoded name
     layout.append(MemoryRegion("kernel", MemoryType.TEXT, text_start_addr, sentry.flash_size))
     layout.append(MemoryRegion("kernel", MemoryType.RAM, ram_start_addr, sentry.ram_size))
 
@@ -46,6 +48,7 @@ def _add_kernel_regions(layout: MemoryLayout, sentry: SentryElf) -> None:
 def _add_idle_regions(layout: MemoryLayout, sentry: SentryElf) -> T.Tuple[int, int]:
     idle_text_saddr, idle_text_size = sentry.get_section_info(".idle_task")
     idle_ram_saddr, idle_ram_size = sentry.get_section_info("._idle")
+    # XXX: hardcoded name
     layout.append(MemoryRegion("idle", MemoryType.TEXT, idle_text_saddr, idle_text_size))
     layout.append(MemoryRegion("idle", MemoryType.RAM, idle_ram_saddr, idle_ram_size))
 
@@ -64,13 +67,58 @@ def _add_app_regions(
     flash_saddr = align_to(task_text, flash_size)
     ram_saddr = align_to(task_ram, ram_size)
 
-    layout.append(MemoryRegion(f"{app.name}", MemoryType.TEXT, flash_saddr, flash_size))
-    layout.append(MemoryRegion(f"{app.name}", MemoryType.RAM, ram_saddr, ram_size))
+    # trim extension
+    name, _ = app.name.split(".", maxsplit=1)
+    layout.append(MemoryRegion(name, MemoryType.TEXT, flash_saddr, flash_size))
+    layout.append(MemoryRegion(name, MemoryType.RAM, ram_saddr, ram_size))
 
     return flash_saddr + flash_size, ram_saddr + ram_size
 
 
-def run_gen_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
+def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
+    """Memory layout internal command
+
+    This command does the outpost application memory placement in the dedicated memory pool.
+    According to target architecture, each application is placed in memory in order to fit
+    MPU region alignment and size.
+    All applications must fit in target device RAM and Flash.
+    This command outputs a memory layout json file.
+
+    Parameters
+    ----------
+    output
+        output (in json) file path
+    exelist
+        list of executable path to consider
+
+    Notes
+    -----
+      Idle and Autotest are special apps that are already placed in memory in a dedicated memory
+      pool at kernel build time.
+
+    .. warning:: Sentry kernel and applications must be built before calling this internal
+
+    .. note:: generated memory layout json file is used as input the following internals:
+      - :py:mod:`.relocate_elf` (PIC and/or prebuilt app)
+      - :py:mod:`.plot_memory_layout`
+      - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
+    """
+    print(exelist)
+    sentry, apps = _get_project_elves(exelist)
+
+    layout = MemoryLayout()
+    _add_kernel_regions(layout, sentry)
+    # FIXME: use application memory pool instead
+    # This is not supported yet, applications are relocated right after idle task
+    next_memory_slot = _add_idle_regions(layout, sentry)
+
+    for app in apps:
+        next_memory_slot = _add_app_regions(layout, app, next_memory_slot)
+
+    layout.save_as_json(output)
+
+
+def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
     """Memory layout internal command
 
     This command does the outpost application memory placement in the dedicated memory pool.
@@ -101,17 +149,13 @@ def run_gen_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
       - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
     project = ProjectPathHelper(projectdir, prefix)
-    sentry, apps = _get_project_elves(project.bindir)
+    return run_gen_memory_layout(output, list(project.bindir.glob("*.elf")))
 
+
+def run_gen_dummy_memory_layout(output: Path) -> None:
     layout = MemoryLayout()
-    _add_kernel_regions(layout, sentry)
-    # FIXME: use application memory pool instead
-    # This is not supported yet, applications are relocated right after idle task
-    next_memory_slot = _add_idle_regions(layout, sentry)
-
-    for app in apps:
-        next_memory_slot = _add_app_regions(layout, app, next_memory_slot)
-
+    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 1 * 1024 * 1024))
+    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 1 * 1024 * 1024))
     layout.save_as_json(output)
 
 
@@ -130,5 +174,25 @@ def run(argv: T.List[str]) -> None:
     parser.add_argument(
         "--prefix", type=str, default=os.path.join("usr", "local"), help="install staging prefix"
     )
+    parser.add_argument(
+        "--dummy", action="store_true", required=False, help="generate a dummy layout"
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        dest="exelist",
+        action="extend",
+        nargs="+",
+        type=Path,
+        required=False,
+        help="List of executable to use for the firmware layout,"
+        "if empty, glob *.elf in staging dir",
+    )
     args = parser.parse_args(argv)
-    run_gen_memory_layout(args.output, args.projectdir, args.prefix)
+
+    if args.dummy:
+        run_gen_dummy_memory_layout(args.output)
+    elif args.exelist:
+        run_gen_memory_layout(args.output, args.exelist)
+    else:
+        run_gen_glob_memory_layout(args.output, args.projectdir, args.prefix)
