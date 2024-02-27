@@ -52,13 +52,22 @@ class Project:
 
         self._packages = list()  # list of ABCpackage
 
+        # XXX:
+        # we assumed that the order in package list is fixed
+        #  - 0: kernel
+        #  - 1: libshield
+        #  - 2..n: apps
+        # There is only meson packages
+        #
+        # This will be, likely, false for next devel step.
+
         # Instantiate Sentry kernel
         self._packages.append(Package("sentry", self, self._toml["sentry"]))
         # Instantiate libshield
         self._packages.append(Package("libshield", self, self._toml["libshield"]))
 
         for app, node in self._toml["app"].items():
-            self._packages.append(Package(app, self, node))
+            self._packages.append(Package(app, self, node, is_app=True))
 
     @property
     def name(self) -> str:
@@ -114,15 +123,102 @@ class Project:
         ninja.add_outpost_internals_rules()
         ninja.add_outpost_targets(self)
         ninja.add_meson_rules()
+
+        # Add setup/compile/install targets for meson packages
         for p in self._packages:
             ninja.add_meson_package(p)
 
-        ninja.add_internal_gen_memory_layout_target(
-            output=pathlib.Path(self.builddir, "layout.json"),
-            projectdir=self.topdir,
-            prefix=self.INSTALL_PREFIX,
-            dependencies=self._packages,
+        # Dummy layout for dummy link
+        dummy_layout = ninja.add_internal_gen_dummy_memory_layout_target(
+            output=pathlib.Path(self.builddir, "dummy_layout.json"),
         )
+
+        # linkerscript template file
+        # XXX: hardcoded in early steps
+        linker_script_template = pathlib.Path(self._packages[1].datadir) / "linkerscript.ld.in"
+
+        dummy_linker_script = pathlib.Path(self.builddir, "dummy.lds")
+        ninja.add_gen_ldscript_target(
+            "dummy", dummy_linker_script, linker_script_template, pathlib.Path(dummy_layout[0])
+        )
+
+        # Dummy link
+        for app in self._packages[2:]:
+            ninja.add_relink_meson_target(
+                app.name,
+                app.installed_exelist[0],
+                app.dummy_linked_exelist[0],
+                dummy_linker_script,
+            )
+
+        layout_exelist = []
+        for package in self._packages:
+            if package.is_sys_package:
+                layout_exelist.extend(package.installed_exelist)
+            else:
+                layout_exelist.extend(package.dummy_linked_exelist)
+
+        # XXX Add deps to dummy linked elf
+        firmware_layout = ninja.add_internal_gen_memory_layout_target(
+            output=pathlib.Path(self.builddir, "layout.json"),
+            dependencies=self._packages,
+            exelist=layout_exelist,
+        )
+
+        app_metadata = []
+        app_hex_files = []
+
+        # gen_ld/relink/gen_meta/objcopy app(s)
+        for package in self._packages:
+            if package.is_app_package:
+                # XXX: Handle multiple exe package
+                elf_in = app.installed_exelist[0]
+                elf_out = app.relocated_exelist[0]
+                linker_script = pathlib.Path(self.builddir, f"{elf_in.stem}.lds")
+                metadata_out = elf_out.with_suffix(".meta")
+                hex_out = elf_out.with_suffix(".hex")
+
+                ninja.add_gen_ldscript_target(
+                    elf_in.stem,
+                    linker_script,
+                    linker_script_template,
+                    pathlib.Path(firmware_layout[0]),
+                    package.name,
+                )
+                ninja.add_relink_meson_target(
+                    package.name,
+                    elf_in,
+                    elf_out,
+                    linker_script,
+                    package.name,
+                )
+
+                ninja.add_objcopy_rule(elf_out, hex_out, "ihex", [], package.name)
+                app_hex_files.append(hex_out)
+
+                ninja.add_gen_metadata_rule(elf_out, metadata_out)
+                app_metadata.append(metadata_out)
+
+        # Patch kernel/objcopy
+        kernel_elf = self._packages[0].installed_exelist[1]
+        kernel_patched_elf = self._packages[0].relocated_exelist[1]
+        kernel_hex = kernel_patched_elf.with_suffix(".hex")
+        # idle_elf = self._packages[0].installed_exelist[0]
+        # XXX this is ugly (...)
+        idle_hex = self._packages[0].installed_exelist[0].with_suffix(".hex")
+
+        ninja.add_fixup_kernel_rule(kernel_elf, kernel_patched_elf, app_metadata)
+        ninja.add_objcopy_rule(kernel_patched_elf, kernel_hex, "ihex", [], self._packages[0].name)
+
+        # XXX:
+        # idle does not need to be relocated nor patched, use the one installed by sentry package
+        # This is not a dependency of srec_cat as there is no explicit nor implicit rule to built-it
+        # (this is an implicit **dynamic** output)
+        # ninja.add_objcopy_rule(idle_elf, idle_hex, "ihex", None, self._packages[0].name)
+
+        # srec_cat
+        firmware_hex = pathlib.Path(self.builddir) / "firmware.hex"
+        ninja.add_srec_cat_rule(kernel_hex, idle_hex, app_hex_files, firmware_hex)
 
         ninja.close()
 
