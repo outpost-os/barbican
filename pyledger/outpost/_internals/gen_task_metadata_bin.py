@@ -57,8 +57,7 @@ def run_gen_task_metadata_bin(input: Path, output: Path) -> None:
     #  - this will be done in the heavy tools in c/c++ (or Rust ?) for
     # consistency/maintainability/robustness reason (code duplication avoidance).
 
-    with output.open("wb") as f:
-        f.write(meta.pack())
+    output.write_bytes(meta.pack())
 
 
 def run(argv: T.List[str]) -> None:
