@@ -3,57 +3,78 @@
 
 import os
 import ninja_syntax  # type: ignore
-from .external_program import external_programs_initialize, external_program_get
 
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+
+from ..utils.environment import find_program
 
 if TYPE_CHECKING:
-    from pyledger.outpost.package import Package
-    from pyledger.outpost.outpost import Project
+    from ..package import Package
+    from ..outpost import Project
 
 
 class NinjaGenFile:
     def __init__(self, filename):
-        external_programs_initialize()
         self._raw_file = open(filename, "w")
-        self._ninja = ninja_syntax.Writer(self._raw_file)
+        self._ninja = ninja_syntax.Writer(self._raw_file, width=1024)
         self._ninja.comment("Outpost build.ninja")
         self._ninja.comment("Auto generated file **DO NOT EDIT**")
-
-        self._add_common_variables()
-        self._add_outpost_rules()
 
     def close(self) -> None:
         """Close, and thus write to disk, ninja build file"""
         self._raw_file.close()
 
-    def _add_common_variables(self) -> None:
+    def add_outpost_rules(self) -> None:
         self._ninja.newline()
-        self._ninja.variable("ninjabuild", external_program_get("ninja"))
-        self._ninja.variable("mesonbuild", external_program_get("meson"))
-        self._ninja.variable("outpost", external_program_get("outpost"))
-        self._ninja.variable("srec_cat", external_program_get("srec_cat"))
-        # FIXME: get this from toml
-        self._ninja.variable("crossfile", "arm-none-eabi-gcc.ini")
-
-    def _add_outpost_rules(self) -> None:
+        self._ninja.comment("outpost executable")
+        self._ninja.variable("outpost", find_program("outpost"))
         self._ninja.newline()
+        self._ninja.comment("outpost reconfiguration rule")
         self._ninja.rule(
             "outpost_reconfigure",
             description="outpost project reconfiguration",
             generator=True,
-            command="$outpost setup -v $projectdir",
+            command="$outpost setup $projectdir",
             pool="console",
         )
 
+    def add_outpost_internals_rules(self) -> None:
+        def _add_outpost_internal_rule(name: str, args: str) -> None:
+            self._ninja.newline()
+            self._ninja.rule(
+                f"{name}",
+                description=f"outpost internal {name} command",
+                command=f"$outpost --internal {name} {args}",
+                pool="console",
+            )
+
+        internal_commands = {
+            "capture_out": "$out $cmdline",
+            "gen_ldscript": "--name=$name $template $in $out",
+            "gen_memory_layout": "--prefix=$prefix $out $projectdir",
+            "gen_task_metadata_bin": "$out $in",
+            "kernel_fixup": "$out $in",
+            "meson_package_dyndep": "--name=$name -j $json $builddir $stagingdir $out",
+            "objcopy": "$out $in --format=$format $extra_option",
+            "relink_elf": "$out $in --linkerscript=$lnk $options",
+            "srec_cat": "--format=$format $out $in",
+        }
+
+        # XXX: to remove
+        for command, args in internal_commands.items():
+            _add_outpost_internal_rule(command, args)
+
+        self._ninja.newline()
         self._ninja.rule(
-            "outpost_relocation",
-            description="outpost project relocation",
-            command="$outpost relocate -v $projectdir",
+            "internal",
+            description="outpost internal command",
+            command="$outpost --internal $cmd $args",
             pool="console",
         )
 
     def add_outpost_targets(self, project: "Project") -> None:
+        self._ninja.newline()
         self._ninja.build(
             "build.ninja",
             "outpost_reconfigure",
@@ -61,18 +82,153 @@ class NinjaGenFile:
             implicit=os.path.join(project.topdir, "project.toml"),
         )
 
-        # XXX:
-        # may depends on actually installed elf instead of install target
-        # may declare output correctly too.
-        # This apply to all meson targets too
+    def add_internal_gen_memory_layout_target(
+        self, output: Path, dependencies: list, exelist: list
+    ) -> list:
+        self._ninja.newline()
+        exelist_opt = " -l ".join(str(exe.resolve()) for exe in exelist)
+        return self._ninja.build(
+            str(output),
+            "internal",
+            implicit=[f"{package.name}_install.stamp" for package in dependencies],
+            variables={
+                "cmd": "gen_memory_layout",
+                "args": f"{str(output)} {exelist_opt}",
+                "description": "generating firmware memory layout",
+            },
+        )
+
+    def add_internal_gen_dummy_memory_layout_target(self, output: Path) -> list:
+        self._ninja.newline()
+        return self._ninja.build(
+            str(output),
+            "internal",
+            variables={
+                "cmd": "gen_memory_layout",
+                "args": f"--dummy {output.resolve()}",
+                "description": "generating dummy memory layout",
+            },
+        )
+
+    def add_gen_ldscript_target(
+        self,
+        name: str,
+        output: Path,
+        template: Path,
+        layout: Path,
+        package_name: Optional[str] = None,
+    ) -> None:
+        implicit_inputs = ["libshield_install.stamp"]
+        if name != "dummy":
+            implicit_inputs.append(f"{package_name if package_name else name}_install.stamp")
+        self._ninja.newline()
+
         self._ninja.build(
-            "relocate",
-            "outpost_relocation",
-            variables={"projectdir": project.topdir},
-            implicit=[f"{package.name}_install" for package in project._packages],
+            outputs=str(output.resolve()),
+            rule="internal",
+            inputs=str(layout.resolve()),
+            implicit=implicit_inputs,
+            variables={
+                "cmd": "gen_ldscript",
+                "args": f"--name {name} {str(template)} {str(layout)} {str(output)}",
+                "description": f"generating {name} linker script",
+            },
+        )
+
+    def add_relink_meson_target(
+        self,
+        name: str,
+        orig_elf: Path,
+        output: Path,
+        linkerscript: Path,
+        package_name: Optional[str] = None,
+    ) -> None:
+        elf_in = str(orig_elf.resolve())
+        elf_out = str(output.resolve())
+        lnk = str(linkerscript.resolve())
+        # XXX build dir !!!
+        introspect = f"{package_name if package_name else name}_introspect.json"
+        self._ninja.newline()
+        self._ninja.build(
+            rule="internal",
+            outputs=elf_out,
+            inputs=[lnk, introspect],
+            implicit=f"{name}_install.stamp",
+            variables={
+                "cmd": "relink_elf",
+                "args": f"-l {lnk} -m {introspect} {elf_out} {elf_in}",
+                "description": f"{name}: linking {elf_out}",
+            },
+        )
+
+    def add_objcopy_rule(
+        self, input: Path, output: Path, format: str, deps: list[str], package_name: str
+    ) -> None:
+        self._ninja.newline()
+        introspect = f"{package_name}_introspect.json"
+        implicit_deps = [introspect]
+        if deps:
+            implicit_deps.extend(deps)
+        self._ninja.build(
+            rule="internal",
+            outputs=str(output),
+            inputs=[str(input)],
+            implicit=implicit_deps,
+            variables={
+                "cmd": "objcopy",
+                "args": f"-f {format} -m {introspect} {str(output)} {str(input)}",
+                "description": f"objcopy {str(input)} to {str(output)}",
+            },
+        )
+
+    def add_gen_metadata_rule(self, input: Path, output: Path) -> None:
+        self._ninja.newline()
+        self._ninja.build(
+            rule="internal",
+            outputs=str(output),
+            inputs=[str(input)],
+            variables={
+                "cmd": "gen_task_metadata_bin",
+                "args": f"{str(output)} {str(input)}",
+                "description": f"generate task {input.stem} metadata",
+            },
+        )
+
+    def add_srec_cat_rule(self, kernel: Path, idle: Path, apps: list[Path], output: Path) -> None:
+        deps = [str(kernel)]
+        deps.extend([str(app) for app in apps])
+        self._ninja.newline()
+        self._ninja.build(
+            rule="internal",
+            outputs=str(output),
+            inputs=deps,
+            variables={
+                "cmd": "srec_cat",
+                "args": f"--format ihex {str(output)} " + " ".join(deps) + f" {str(idle)}",
+                "description": f"generating {str(output)} with srec_cat",
+            },
+        )
+
+    def add_fixup_kernel_rule(self, input: Path, output: Path, metadata: list[Path]) -> None:
+        metadata_str = [str(datum) for datum in metadata]
+        self._ninja.newline()
+        self._ninja.build(
+            rule="internal",
+            outputs=str(output),
+            inputs=metadata_str,
+            variables={
+                "cmd": "kernel_fixup",
+                "args": f"{str(output)} {str(input)} {' '.join(metadata_str)}",
+                "description": "kernel task metadata fixup",
+            },
         )
 
     def add_meson_rules(self) -> None:
+        self._ninja.newline()
+        self._ninja.variable("mesonbuild", find_program("meson"))
+        self._ninja.newline()
+        # FIXME: get this from toml
+        self._ninja.variable("crossfile", "arm-none-eabi-gcc.ini")
         self._ninja.newline()
         self._ninja.rule(
             "meson_setup",
@@ -80,24 +236,24 @@ class NinjaGenFile:
             command="$mesonbuild setup --cross-file=$crossfile $opts $builddir $sourcedir",
             pool="console",
         )
-
+        self._ninja.newline()
         self._ninja.rule(
             "meson_compile",
             description="meson compile $name",
             pool="console",
-            command="$mesonbuild compile -C $builddir",
+            command="$mesonbuild compile -C $builddir && touch $out",
         )
-
+        self._ninja.newline()
         self._ninja.rule(
             "meson_install",
             description="meson install $name",
             pool="console",
-            command="$mesonbuild install --only-changed --destdir $stagingdir -C $builddir",
+            command="$mesonbuild install --only-changed --destdir $stagingdir -C $builddir &&"
+            "touch $out",
         )
 
-        self._ninja.newline()
-
     def add_meson_package(self, package: "Package") -> None:
+        self._ninja.newline()
         self._ninja.build(
             f"{package.builddir}/build.ninja",
             "meson_setup",
@@ -107,26 +263,50 @@ class NinjaGenFile:
                 "name": package.name,
                 "opts": package.build_opts,
             },
-            implicit=[f"{dep}_install" for dep in package.deps],
+            order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )
+        self._ninja.newline()
         self._ninja.build(f"{package.name}_setup", "phony", f"{package.builddir}/build.ninja")
+        self._ninja.newline()
         self._ninja.build(
-            f"{package.name}_compile",
+            f"{package.name}.dyndep",
+            "meson_package_dyndep",
+            order_only=f"{package.name}_setup",
+            variables={
+                "name": package.name,
+                "builddir": package.builddir,
+                "stagingdir": package.stagingdir,
+                "json": f"{package.name}_introspect.json",
+            },
+            implicit_outputs=f"{package.name}_introspect.json",
+        )
+
+        self._ninja.newline()
+        self._ninja.build(
+            f"{package.name}_compile.stamp",
             "meson_compile",
-            implicit=f"{package.name}_setup",
             variables={
                 "builddir": package.builddir,
                 "name": package.name,
+                "dyndep": f"{package.name}.dyndep",
             },
+            order_only=f"{package.name}.dyndep",
         )
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
+        self._ninja.newline()
         self._ninja.build(
-            f"{package.name}_install",
+            f"{package.name}_install.stamp",
             "meson_install",
-            f"{package.name}_compile",
             variables={
                 "builddir": package.builddir,
                 "name": package.name,
                 "stagingdir": package.stagingdir,
+                "dyndep": f"{package.name}.dyndep",
             },
+            order_only=f"{package.name}.dyndep",
         )
+
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_install", "phony", f"{package.name}_install.stamp")
         self._ninja.newline()

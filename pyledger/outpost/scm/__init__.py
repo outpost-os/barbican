@@ -7,7 +7,7 @@ from .scm import ScmBaseClass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyledger.outpost.package import Package
+    from ..package import Package
 
 __all__ = ["Git"]
 

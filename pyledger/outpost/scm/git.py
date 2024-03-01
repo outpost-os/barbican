@@ -4,8 +4,8 @@
 import subprocess
 import os
 
-from pyledger.outpost.utils import working_directory_attr
-from pyledger.outpost import logger
+from ..utils import working_directory_attr
+from .. import logger
 
 from .scm import ScmBaseClass
 

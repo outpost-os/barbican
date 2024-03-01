@@ -2,27 +2,44 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from pathlib import Path
 import subprocess
 
-from pyledger.outpost.scm import scm_create
-from pyledger.outpost.utils import working_directory_attr
+from ..scm import scm_create
+from ..utils import working_directory_attr
 
-from typing import TYPE_CHECKING
+import typing as T
 
-if TYPE_CHECKING:
+if T.TYPE_CHECKING:
     from pyledger.outpost.outpost import Project
 
 
 class Package:
-    def __init__(self, name: str, parent_project: "Project", config_node: dict) -> None:
+    def __init__(
+        self, name: str, parent_project: "Project", config_node: dict, is_app: bool = False
+    ) -> None:
         self._name = name
         self._parent = parent_project
         self._config = config_node
         self._scm = scm_create(self)
+        # True if package is an user app, False if sys package
+        self._is_app = is_app
+
+        self._exelist: list[str] = (
+            self._config["exelist"] if "exelist" in self._config.keys() else []
+        )
 
     @property
     def name(self) -> str:
         return self._name
+
+    @property
+    def is_app_package(self) -> bool:
+        return self._is_app
+
+    @property
+    def is_sys_package(self) -> bool:
+        return not self._is_app
 
     @property
     def sourcedir(self) -> str:
@@ -40,6 +57,40 @@ class Package:
     def pkgconfigdir(self) -> str:
         # XXX: define a prefix instead of usr/local which is the default meson prefix
         return os.path.join(self.stagingdir, "usr/local", "lib/pkgconfig")
+
+    @property
+    def bindir(self) -> str:
+        return self._parent.bindir
+
+    @property
+    def libdir(self) -> str:
+        return self._parent.libdir
+
+    @property
+    def datadir(self) -> str:
+        return os.path.join(self._parent.datadir, self.name.replace("lib", "", 1))
+
+    @property
+    def built_exelist(self) -> list[Path]:
+        return [Path(self.builddir) / exe for exe in self._exelist]
+
+    @property
+    def installed_exelist(self) -> list[Path]:
+        return [Path(self.bindir) / exe for exe in self._exelist]
+
+    @property
+    def dummy_linked_exelist(self) -> list[Path]:
+        dummy_list = []
+        for exe in self._exelist:
+            exe_path = Path(self._parent.builddir) / exe
+            new_suffix = ".dummy" + exe_path.suffix
+            dummy_list.append(exe_path.with_suffix(new_suffix))
+
+        return dummy_list
+
+    @property
+    def relocated_exelist(self) -> list[Path]:
+        return [Path(self._parent.builddir) / exe for exe in self._exelist]
 
     @property
     def parent(self):

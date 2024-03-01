@@ -14,7 +14,7 @@ from pyledger.outpost import logger
 class Elf:
     SECTION_HEADER_SIZE = 16
 
-    def __init__(self, elf: str, out: str) -> None:
+    def __init__(self, elf: str, out: typing.Optional[str]) -> None:
         self._name: str = os.path.basename(elf)
         logger.info(f"Parsing {self.name} from {elf}")
         self._elf = typing.cast(lief.ELF.Binary, lief.parse(elf))
@@ -33,8 +33,9 @@ class Elf:
         return self._name
 
     def save(self) -> None:
+        # XXX: FIXME
         logger.info(f"Wrinting {self.name} to {self._output_path}")
-        self._elf.write(self._output_path)
+        self._elf.write(self._output_path)  # type: ignore
 
     @property
     def is_an_outpost_application(self) -> bool:
@@ -74,7 +75,10 @@ class Elf:
 
 
 class SentryElf(Elf):
-    def __init__(self, elf: str, out: str) -> None:
+    FLASH_SECTIONS = [".isr_vector", ".task_list", ".text", ".ARM"]
+    RAM_SECTIONS = [".bss", "._stack"]
+
+    def __init__(self, elf: str, out: typing.Optional[str]) -> None:
         super().__init__(elf, out)
 
     def patch_task_list(self, task_meta_table: bytearray) -> None:
@@ -84,13 +88,29 @@ class SentryElf(Elf):
         assert len(task_meta_table) == tbl.size
         tbl.content = memoryview(task_meta_table)
 
+    @property
+    def flash_size(self) -> int:
+        flash_size = 0
+        for section in self.FLASH_SECTIONS:
+            _, size = self.get_section_info(section)
+            flash_size = flash_size + size
+        return flash_size
+
+    @property
+    def ram_size(self) -> int:
+        ram_size = 0
+        for section in self.RAM_SECTIONS:
+            _, size = self.get_section_info(section)
+            ram_size = ram_size + size
+        return ram_size
+
 
 class AppElf(Elf):
     # Section to relocate
     FLASH_SECTIONS = [".text", ".ARM"]
     RAM_SECTIONS = [".svcexchange", ".got", ".data", ".bss"]
 
-    def __init__(self, elf: str, out: str) -> None:
+    def __init__(self, elf: str, out: typing.Optional[str]) -> None:
         """Initialize an Outpost application Elf representation
 
         Parameters
@@ -258,8 +278,12 @@ class AppElf(Elf):
                     delta = sections[0].file_offset - offset
                     for section in sections:
                         offset = section.file_offset
+                        # XXX
+                        #  Some types seem to be lost, we probably need some additional hints
+                        #  the `!r` only silents the type check error (i.e. str | bytes format in
+                        #  log message)
                         logger.debug(
-                            f" - section {section.name} offset: {offset:02x} -> "
+                            f" - section {section.name!r} offset: {offset:02x} -> "
                             f"{offset - delta:02x}"
                         )
                         section.file_offset = offset - delta

@@ -4,13 +4,13 @@
 from abc import ABC, abstractmethod
 import os
 
-from pyledger.outpost import logger
-from pyledger.outpost.utils import working_directory_attr
+from .. import logger
+from ..utils import working_directory_attr
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyledger.outpost.package import Package
+    from ..package import Package
 
 
 class ScmBaseClass(ABC):
