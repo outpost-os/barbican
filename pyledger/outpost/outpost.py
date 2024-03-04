@@ -17,6 +17,7 @@ import sys
 import typing as T
 
 from . import logger  # type: ignore
+from . import config
 from .package import Package
 from .buildsys import ninja_backend
 from .relocation import relocate_project
@@ -38,6 +39,7 @@ class Project:
 
         with open(toml_filename, "rb") as f:
             self._toml = tomllib.load(f)
+            config.validate(self._toml)
 
         logger.info(f"Outpost project '{self.name}'")
         logger.debug(f"project top level directory: {self.topdir}")
