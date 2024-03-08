@@ -124,6 +124,12 @@ class Project:
         ninja.add_outpost_rules()
         ninja.add_outpost_internals_rules()
         ninja.add_outpost_targets(self)
+        ninja.add_outpost_cross_file(pathlib.Path(self._toml["crossfile"]))
+        dts_include_dirs = []
+        for p in self._packages:
+            dts_include_dirs.extend(p.dts_include_dirs)
+        ninja.add_outpost_dts(pathlib.Path(self._toml["dts"]), dts_include_dirs)
+
         ninja.add_meson_rules()
 
         # Add setup/compile/install targets for meson packages

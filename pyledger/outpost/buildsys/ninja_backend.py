@@ -82,6 +82,15 @@ class NinjaGenFile:
             implicit=os.path.join(project.topdir, "project.toml"),
         )
 
+    def add_outpost_dts(self, dts: Path, dts_include_dirs: list[Path]) -> None:
+        self._ninja.newline()
+        self._ninja.variable("dts", str(dts.resolve(strict=True)))
+        self._ninja.variable("dtsincdir", ",".join([str(d.resolve()) for d in dts_include_dirs]))
+
+    def add_outpost_cross_file(self, crossfile: Path) -> None:
+        self._ninja.newline()
+        self._ninja.variable("crossfile", str(crossfile))
+
     def add_internal_gen_memory_layout_target(
         self, output: Path, dependencies: list, exelist: list
     ) -> list:
@@ -227,13 +236,11 @@ class NinjaGenFile:
         self._ninja.newline()
         self._ninja.variable("mesonbuild", find_program("meson"))
         self._ninja.newline()
-        # FIXME: get this from toml
-        self._ninja.variable("crossfile", "arm-none-eabi-gcc.ini")
-        self._ninja.newline()
         self._ninja.rule(
             "meson_setup",
             description="meson setup $name",
-            command="$mesonbuild setup --cross-file=$crossfile $opts $builddir $sourcedir",
+            command="$mesonbuild setup -Ddts=$dts -Ddts-include-dirs=$dtsincdir "
+            "--cross-file=$crossfile $opts $builddir $sourcedir",
             pool="console",
         )
         self._ninja.newline()
