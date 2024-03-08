@@ -68,6 +68,14 @@ _PROJECT_SCHEMA = json.loads(
             },
             "description": "license file name"
         },
+        "dts": {
+            "type": "string",
+            "description": "DTS file"
+        },
+        "crossfile": {
+            "type": "string",
+            "description": "meson cross file for arch mcu"
+        },
         "sentry": {
             "$ref": "urn:outpost:sentry"
         },
@@ -84,7 +92,7 @@ _PROJECT_SCHEMA = json.loads(
             "additionalProperties": false
         }
     },
-    "required": [ "name", "sentry", "libshield" ],
+    "required": [ "name", "dts", "sentry", "libshield" ],
     "dependentRequired": {
         "license": ["license_file"],
         "license_file": ["license"]

@@ -29,6 +29,16 @@ class Package:
             self._config["exelist"] if "exelist" in self._config.keys() else []
         )
 
+        self._dts_include_dirs = [Path(self.sourcedir) / "dts"]
+        if "extra_dts_incdir" in self._config:
+            self._dts_include_dirs.extend(self._config["extra_dts_incdir"])
+
+        dotconfig = Path(self._config["config_file"])
+        if not dotconfig.exists():
+            dotconfig = Path(self.sourcedir) / dotconfig.relative_to(parent_project.topdir)
+
+        self._dotconfig = dotconfig.resolve()
+
     @property
     def name(self) -> str:
         return self._name
@@ -93,6 +103,10 @@ class Package:
         return [Path(self._parent.builddir) / exe for exe in self._exelist]
 
     @property
+    def dts_include_dirs(self) -> list[Path]:
+        return self._dts_include_dirs
+
+    @property
     def parent(self):
         return self._parent
 
@@ -106,7 +120,7 @@ class Package:
         build_opts = list()
         build_opts.append("--pkgconfig.relocatable")
         build_opts.append(f"--pkg-config-path={self.pkgconfigdir}")
-        build_opts.append(f"-Dconfig={self._config['config_file']}")
+        build_opts.append(f"-Dconfig={str(self._dotconfig)}")
         build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
         return build_opts
 
