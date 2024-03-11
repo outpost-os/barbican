@@ -75,7 +75,6 @@ class Project:
         else:
             self._noapp = True
 
-
     @property
     def name(self) -> str:
         return self._toml["name"]
