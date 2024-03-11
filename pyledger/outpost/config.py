@@ -56,7 +56,10 @@ _PROJECT_SCHEMA = json.loads(
         "name": {
             "type": "string",
             "description": "Project Name"
-            },
+        },
+        "version": {
+            "type": "string"
+        },
         "license": {
             "type": "string",
             "description": "license identifier (must be a valid SPDX License Identifier)"
@@ -92,7 +95,7 @@ _PROJECT_SCHEMA = json.loads(
             "additionalProperties": false
         }
     },
-    "required": [ "name", "dts", "sentry", "libshield" ],
+    "required": [ "name", "dts", "sentry", "libshield", "version" ],
     "dependentRequired": {
         "license": ["license_file"],
         "license_file": ["license"]
