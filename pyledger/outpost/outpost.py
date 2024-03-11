@@ -68,8 +68,13 @@ class Project:
         # Instantiate libshield
         self._packages.append(Package("libshield", self, self._toml["libshield"]))
 
-        for app, node in self._toml["app"].items():
-            self._packages.append(Package(app, self, node, is_app=True))
+        if "app" in self._toml:
+            self._noapp = False
+            for app, node in self._toml["app"].items():
+                self._packages.append(Package(app, self, node, is_app=True))
+        else:
+            self._noapp = True
+
 
     @property
     def name(self) -> str:
@@ -135,6 +140,10 @@ class Project:
         # Add setup/compile/install targets for meson packages
         for p in self._packages:
             ninja.add_meson_package(p)
+
+        if self._noapp:
+            ninja.close()
+            return
 
         # Dummy layout for dummy link
         dummy_layout = ninja.add_internal_gen_dummy_memory_layout_target(
