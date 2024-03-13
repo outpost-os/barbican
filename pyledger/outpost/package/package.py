@@ -31,13 +31,17 @@ class Package:
 
         self._dts_include_dirs = [Path(self.sourcedir) / "dts"]
         if "extra_dts_incdir" in self._config:
-            self._dts_include_dirs.extend(self._config["extra_dts_incdir"])
+            # extra dts includedir are source package relative
+            self._dts_include_dirs.extend(
+                [Path(self.sourcedir) / d for d in self._config["extra_dts_incdir"]]
+            )
 
         dotconfig = Path(self._config["config_file"])
-        if not dotconfig.exists():
-            dotconfig = Path(self.sourcedir) / dotconfig.relative_to(parent_project.topdir)
+        if dotconfig.is_absolute():
+            # XXX proper execpetion handling
+            raise Exception("config file must be project top level relative file")
 
-        self._dotconfig = dotconfig.resolve()
+        self._dotconfig = (Path(self._parent.topdir) / dotconfig).resolve(strict=True)
 
     @property
     def name(self) -> str:
