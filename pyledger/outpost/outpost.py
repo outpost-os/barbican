@@ -132,7 +132,10 @@ class Project:
         dts_include_dirs = []
         for p in self._packages:
             dts_include_dirs.extend(p.dts_include_dirs)
-        ninja.add_outpost_dts(pathlib.Path(self._toml["dts"]), dts_include_dirs)
+
+        ninja.add_outpost_dts(
+            (pathlib.Path(self.topdir) / self._toml["dts"]).resolve(strict=True), dts_include_dirs
+        )
 
         ninja.add_meson_rules()
 
