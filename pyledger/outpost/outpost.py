@@ -170,17 +170,19 @@ class Project:
                 dummy_linker_script,
             )
 
-        layout_exelist = []
+        layout_sys_exelist = []
+        layout_app_exelist = []
         for package in self._packages:
             if package.is_sys_package:
-                layout_exelist.extend(package.installed_exelist)
+                layout_sys_exelist.extend(package.installed_exelist)
             else:
-                layout_exelist.extend(package.dummy_linked_exelist)
+                layout_app_exelist.extend(package.dummy_linked_exelist)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
             output=pathlib.Path(self.builddir, "layout.json"),
             dependencies=self._packages,
-            exelist=layout_exelist,
+            sys_exelist=layout_sys_exelist,
+            app_exelist=layout_app_exelist,
         )
 
         app_metadata = []

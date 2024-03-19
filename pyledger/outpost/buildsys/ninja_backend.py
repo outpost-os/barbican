@@ -92,12 +92,16 @@ class NinjaGenFile:
         self._ninja.variable("crossfile", str(crossfile))
 
     def add_internal_gen_memory_layout_target(
-        self, output: Path, dependencies: list, exelist: list
+        self,
+        output: Path,
+        dependencies: list,
+        sys_exelist: list,
+        app_exelist: list,
     ) -> list:
         self._ninja.newline()
-        exelist_opt = " -l ".join(str(exe.resolve()) for exe in exelist)
+        exelist_opt = " -l ".join(str(exe.resolve()) for exe in sys_exelist + app_exelist)
         implicit = [f"{package.name}_install.stamp" for package in dependencies]
-        implicit.extend([str(exe.resolve()) for exe in exelist])
+        implicit.extend([str(exe.resolve()) for exe in app_exelist])
         return self._ninja.build(
             str(output),
             "internal",
