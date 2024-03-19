@@ -96,10 +96,12 @@ class NinjaGenFile:
     ) -> list:
         self._ninja.newline()
         exelist_opt = " -l ".join(str(exe.resolve()) for exe in exelist)
+        implicit = [f"{package.name}_install.stamp" for package in dependencies]
+        implicit.extend([str(exe.resolve()) for exe in exelist])
         return self._ninja.build(
             str(output),
             "internal",
-            implicit=[f"{package.name}_install.stamp" for package in dependencies],
+            implicit=implicit,
             variables={
                 "cmd": "gen_memory_layout",
                 "args": f"{str(output)} {exelist_opt}",
