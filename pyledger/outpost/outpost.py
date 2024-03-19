@@ -177,7 +177,6 @@ class Project:
             else:
                 layout_exelist.extend(package.dummy_linked_exelist)
 
-        # XXX Add deps to dummy linked elf
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
             output=pathlib.Path(self.builddir, "layout.json"),
             dependencies=self._packages,
@@ -191,8 +190,8 @@ class Project:
         for package in self._packages:
             if package.is_app_package:
                 # XXX: Handle multiple exe package
-                elf_in = app.installed_exelist[0]
-                elf_out = app.relocated_exelist[0]
+                elf_in = package.installed_exelist[0]
+                elf_out = package.relocated_exelist[0]
                 linker_script = pathlib.Path(self.builddir, f"{elf_in.stem}.lds")
                 metadata_out = elf_out.with_suffix(".meta")
                 hex_out = elf_out.with_suffix(".hex")
