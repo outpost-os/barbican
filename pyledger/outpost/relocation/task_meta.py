@@ -81,33 +81,6 @@ class JobFlags(cstruct.MemCStruct):
         self.raw = self.raw | ((mode & 0x7) << 1)
 
 
-class TaskHandle(cstruct.MemCStruct):
-    """XXX: Task handle family is 0, rerun is a runtime counter for running index"""
-
-    __byte_order__ = cstruct.LITTLE_ENDIAN
-    __def__ = """
-    struct {
-        uint32_t raw;
-    }
-    """
-
-    _id_shift: int = 13
-    _id_mask: int = 0x0000FFFF << _id_shift
-
-    def __init__(self) -> None:
-        super(TaskHandle, self).__init__()
-        self.raw: int
-
-    @property
-    def id(self) -> int:
-        return (self.raw & self._id_mask) >> self._id_shift
-
-    @id.setter
-    def id(self, id: int) -> None:
-        self.raw = self.raw & (~self._id_mask)
-        self.raw = self.raw | (id << self._id_shift & (self._id_mask))
-
-
 class TaskMeta(cstruct.MemCStruct):
     """Task meta structure with padding
     As a variable of type TaskMeta is align on 8 bytes boundary (due to uint64 first field)
@@ -118,13 +91,12 @@ class TaskMeta(cstruct.MemCStruct):
     __def__ = """
 
     typedef struct JobFlags job_flags_t;
-    typedef struct TaskHandle taskh_t;
 
     struct {
         uint64_t magic;
         uint32_t version;
 
-        taskh_t handle;
+        uint32_t label;
 
         uint8_t priority;
         uint8_t quantum;

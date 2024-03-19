@@ -6,6 +6,7 @@ from pathlib import Path
 import random
 import typing as T
 
+from .. import logger
 from ..relocation.task_meta import TaskMeta, EXIT_MODES
 from ..relocation.elfutils import AppElf
 from ..utils import align_to
@@ -17,7 +18,16 @@ def run_gen_task_metadata_bin(input: Path, output: Path) -> None:
 
     meta.magic = int(elf.get_package_metadata("task", "magic_value"), base=16)
     meta.version = 1
-    meta.handle.id = random.getrandbits(16)
+
+    try:
+        meta.label = int(elf.get_package_metadata("task", "label"), base=16)
+    except KeyError:
+        meta.label = random.getrandbits(32)
+        logger.warning(f"undefined task label in {elf.name} package metadata")
+        logger.warning(f"using a randomly generated one ({meta.label:#08x})")
+    except Exception:
+        # Fail fast on other error(s)
+        raise
     meta.priority = int(elf.get_package_metadata("task", "priority"), base=10)
     meta.quantum = int(elf.get_package_metadata("task", "quantum"), base=10)
     meta.capabilities = 0  # XXX todo

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Ledger SAS
 # SPDX-License-Identifier: Apache-2.0
 
-from pyledger.outpost.relocation.task_meta import TaskMeta, JobFlags, TaskHandle
+from pyledger.outpost.relocation.task_meta import TaskMeta, JobFlags
 
 
 def test_jobflags_struct_size():
@@ -48,30 +48,8 @@ def test_jobflags_serialize():
     assert job_flags.pack() == b"\x00\x00\x00\x00"
 
 
-def test_taskh_size():
-    taskh = TaskHandle()
-    assert taskh.sizeof() == 4
-
-
-def test_taskh_id():
-    taskh = TaskHandle()
-    for id in [42, 12354, 0xFFFF, 0, 42]:
-        taskh.id = id
-        assert taskh.id == id
-
-
-def test_taskh_serialize():
-    taskh = TaskHandle()
-    for id in [42, 12354, 0xFFFF, 0, 42]:
-        taskh.id = id
-        expected = int.to_bytes(
-            (id << TaskHandle._id_shift) & TaskHandle._id_mask, taskh.sizeof(), "little"
-        )
-        assert taskh.pack() == expected
-
-
 def test_taskmeta():
     task_meta = TaskMeta()
-    task_meta.handle.id = 42
+    task_meta.label = 0x42
     task_meta.flags.autostart_mode = True
     task_meta.flags.exit_mode = "panic"
