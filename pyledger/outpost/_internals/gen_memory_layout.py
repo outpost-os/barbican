@@ -60,12 +60,16 @@ def _add_app_regions(
 ) -> T.Tuple[int, int]:
     task_text, task_ram = memory_slot
     # TODO: round up according to target arch (i.e. armv7 -> pow2, armv8 -> 32 bytes)
-    flash_size = pow2_round_up(app.flash_size)
-    ram_size = pow2_round_up(app.ram_size)
+    # flash_size = pow2_round_up(app.flash_size)
+    # ram_size = pow2_round_up(app.ram_size)
+    flash_size = align_to(app.flash_size, 32)
+    ram_size = align_to(app.ram_size, 32)
 
     # TODO: only for armv7
-    flash_saddr = align_to(task_text, flash_size)
-    ram_saddr = align_to(task_ram, ram_size)
+    # flash_saddr = align_to(task_text, flash_size)
+    # ram_saddr = align_to(task_ram, ram_size)
+    flash_saddr = align_to(task_text, 32)
+    ram_saddr = align_to(task_ram, 32)
 
     # trim extension
     name, _ = app.name.split(".", maxsplit=1)
