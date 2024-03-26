@@ -158,8 +158,8 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:
     layout = MemoryLayout()
-    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 1 * 1024 * 1024))
-    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 1 * 1024 * 1024))
+    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 2 * 1024 * 1024))
+    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 2 * 1024 * 1024))
     layout.save_as_json(output)
 
 
