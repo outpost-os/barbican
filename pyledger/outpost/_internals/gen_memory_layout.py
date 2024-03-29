@@ -17,7 +17,7 @@ import typing as T
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils.memory_layout import MemoryType, MemoryRegion, MemoryLayout
 from ..utils.pathhelper import ProjectPathHelper
-from ..utils import pow2_round_up, align_to
+from ..utils import align_to
 
 
 def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]]:
