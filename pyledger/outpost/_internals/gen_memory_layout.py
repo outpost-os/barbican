@@ -17,7 +17,7 @@ import typing as T
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils.memory_layout import MemoryType, MemoryRegion, MemoryLayout
 from ..utils.pathhelper import ProjectPathHelper
-from ..utils import pow2_round_up, align_to
+from ..utils import align_to
 
 
 def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]]:
@@ -60,12 +60,16 @@ def _add_app_regions(
 ) -> T.Tuple[int, int]:
     task_text, task_ram = memory_slot
     # TODO: round up according to target arch (i.e. armv7 -> pow2, armv8 -> 32 bytes)
-    flash_size = pow2_round_up(app.flash_size)
-    ram_size = pow2_round_up(app.ram_size)
+    # flash_size = pow2_round_up(app.flash_size)
+    # ram_size = pow2_round_up(app.ram_size)
+    flash_size = align_to(app.flash_size, 32)
+    ram_size = align_to(app.ram_size, 32)
 
     # TODO: only for armv7
-    flash_saddr = align_to(task_text, flash_size)
-    ram_saddr = align_to(task_ram, ram_size)
+    # flash_saddr = align_to(task_text, flash_size)
+    # ram_saddr = align_to(task_ram, ram_size)
+    flash_saddr = align_to(task_text, 32)
+    ram_saddr = align_to(task_ram, 32)
 
     # trim extension
     name, _ = app.name.split(".", maxsplit=1)
@@ -154,8 +158,8 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:
     layout = MemoryLayout()
-    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 1 * 1024 * 1024))
-    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 1 * 1024 * 1024))
+    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 2 * 1024 * 1024))
+    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 2 * 1024 * 1024))
     layout.save_as_json(output)
 
 
