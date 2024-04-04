@@ -37,7 +37,6 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.KULOS_NEXUS_CI_RW_PASSWORD }}
         TWINE_REPOSITORY_URL: https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/
       run: |
-        poetry-dynamic-versioning
-        poetry build
+        python -m build
         twine check dist/*
         twine upload dist/*
