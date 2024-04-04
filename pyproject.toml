@@ -1,103 +1,84 @@
+# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=0.4.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
-[tool.poetry]
+[project]
 name = "pyledger-outpost"
-packages = [{ include = "pyledger" }]
-description = "Outpost package"
+description = "Outpost-OS build system"
+dynamic = ["version"]
+requires-python = ">= 3.10"
 readme = "README.md"
-license = "Apache-2.0"
 authors = [
-  "Ledger SA <firmware@ledger.fr>",
+  {email = "Ledger SA <firmware@ledger.fr>"},
 ]
-# placeholder for dynamic versioning
-version = "0.0.0"
-
-# when deploying an executable, define the executable name
-# and the function it will execute
-# see https://python-poetry.org/docs/pyproject/#scripts
-[tool.poetry.scripts]
-outpost = 'pyledger.outpost.outpost:main'
-
-[[tool.poetry.source]]
-name = "ledger"
-url = "https://nexus.orange.ledgerlabs.net/repository/kulos-pypi/simple/"
-priority = "supplemental"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
-# if on a tagged commit, using the tag as version, otherwise, indicate
-# the distance and the commit ref
-format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}+{{ distance }}.{{ commit }}{% endif %}"
-style = "semver"
-[tool.poetry-dynamic-versioning.substitution]
-files = ["pyledger/outpost/__version__.py"]
-
-[tool.poetry.dependencies]
-cstruct = ">=5.2,<6.0"
-dunamai = ">=1.16.1"
-Jinja2 = ">=3.1.0"
-jinja-cli = ">=1.2.0"
-jsonschema = ">=4.18.0"
-kconfiglib = ">=14.1.0"
-lief = ">0.13"
-meson = ">=1.3.0"
-ninja = ">= 1.11.0"
-ninja_syntax = ">1.7"
-pyledger-logger = ">=0.0.1"
-pyledger-svd2json = ">=0.1.3"
-pyledger-devicetree-parser = ">=0.0.7"
-python = ">=3.8.1,<4.0"
-tomli = { version = "^2.0.1", python = "<3.11" }
-referencing = ">= 0.33.0"
-GitPython = ">= 3.1.0"
-
-[tool.poetry.group.dev.dependencies]
-coverage = ">=0.4"
-flake8 = ">=7.0,<8.0"
-flake8-html = ">=0.4.3"
-mypy = ">=1.8.0"
-pytest = ">=4.6"
-tox = ">=4.12"
-black = ">=24.2,<25.0"
-cachetools = ">=5.3"
-lxml = ">=4.8.0"
-types-jsonschema = ">=4.18.0"
-
-[metadata]
-homepage = "https://git.orange.ledgerlabs.net/outpost/python-outpost"
+license = {file = "LICENSE"}
 dependencies = [
+    "cstruct>=5.2,<6.0",
+    "Jinja2>=3.1.0",
+    "jinja-cli>=1.2.0",
+    "jsonschema>=4.18.0",
+    "kconfiglib>=14.1.0",
+    "lief>0.13",
+    "meson>=1.3.0",
+    "ninja>=1.11.0",
+    "ninja_syntax>1.7",
+    "pyledger-logger>=0.0.1",
+    "pyledger-svd2json>=0.1.3",
+    "pyledger-devicetree-parser>=0.0.7",
+    "tomli>=2.0.1; python_version < '3.11'",
+    "referencing>=0.33.0",
+    "GitPython>=3.1.0",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
 
+    "Intended Audience :: Developers",
+
+    "Topic :: Software Development :: Build Tools",
+
+    "License :: OSI Approved :: Apache Software License",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
-[sdist]
-formats = "gztar"
+[project.urls]
+Homepage = "https://git.orange.ledgerlabs.net/outpost"
+Documentation = "https://pages.git.orange.ledgerlabs.net/outpost/outpostpedia/"
+Repository = "https://git.orange.ledgerlabs.net/outpost/python-outpost.git"
+Issues = "https://git.orange.ledgerlabs.net/outpost/python-outpost/issues"
 
-[tool.black]
-target-version = ["py38", "py39", "py310", "py311"]
+[project.scripts]
+outpost = "pyledger.outpost.outpost:main"
 
-[tool.mypy]
-python_version = "3.10"
+[project.optional-dependencies]
+devel = [
+    "coverage>=0.4",
+    "flake8>=7.0,<8.0",
+    "flake8-html>=0.4.3",
+    "mypy>=1.8.0",
+    "pytest>=4.6",
+    "black>=24.2,<25.0",
+    "cachetools>=5.3",
+    "lxml>=4.8.0",
+    "types-jsonschema>=4.18.0",
+]
+doc = [
+    "Sphinx>=7.2.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-simplepdf>=1.6.0",
+    # "sphinx-autoapi",
+]
 
-# support for namespace packages
-namespace_packages = true
+[tool.setuptools]
+# TODO: move to src standard layout
+packages = ["pyledger"]
 
-# comma separated list of packages
-packages = "pyledger.outpost"
-
-# Untyped definitions and calls
-disallow_incomplete_defs = true
-
-# None and Optional handling
-no_implicit_optional = true
-strict_optional = true
-
-# Configuring warnings
-warn_no_return = true
-warn_redundant_casts = true
-warn_unreachable = true
-
-# Miscellaneous strictness flags
-strict_equality = false
+[tool.setuptools_scm]
+# version_file = "pyledger/outpost/__version__.py"
