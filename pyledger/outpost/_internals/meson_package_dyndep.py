@@ -16,6 +16,7 @@ def _escape_path(path: str) -> str:
     # Escape $ first, then other, please keep this order.
     return path.replace("$", "$$").replace(" ", "$ ").replace(":", "$:")
 
+
 def _add_build_target_dyndep(
     target: str, implicit_inputs: set[str], implicit_output: set[str], out: T.Any
 ) -> None:
@@ -80,7 +81,7 @@ def _gen_ninja_dyndep_file(
 
     install_implicit_inputs = compile_implicit_outputs
 
-    install_implicit_outputs = []
+    install_implicit_outputs = set()
     for file in installed.values():
         _path = Path(file)
         # XXX:
@@ -93,7 +94,7 @@ def _gen_ninja_dyndep_file(
             _path = stagingdir.joinpath(*_path.parts[1:])
         else:
             _path = stagingdir.joinpath(_path)
-        install_implicit_outputs.append(_escape_path(str(_path)))
+        install_implicit_outputs.add(_escape_path(str(_path)))
 
     with output.open("w") as dyndep:
         dyndep.write("ninja_dyndep_version = 1\n")
