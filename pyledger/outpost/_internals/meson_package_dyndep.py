@@ -11,6 +11,12 @@ import typing as T
 from ..utils.environment import find_program
 
 
+def _escape_path(path: str) -> str:
+    """Escape ninja build syntax separators and tokens"""
+    # Escape $ first, then other, please keep this order.
+    return path.replace("$", "$$").replace(" ", "$ ").replace(":", "$:")
+
+
 def _add_build_target_dyndep(
     target: str, implicit_inputs: set[str], implicit_output: set[str], out: T.Any
 ) -> None:
@@ -52,7 +58,7 @@ def _gen_ninja_dyndep_file(
     compile_target = f"{package}_compile.stamp"
     install_target = f"{package}_install.stamp"
 
-    buildsys_files = introspect["buildsystem_files"]
+    buildsys_files = [_escape_path(p) for p in introspect["buildsystem_files"]]
 
     # all package source files
     sources = []
@@ -60,20 +66,35 @@ def _gen_ninja_dyndep_file(
     filenames = []
     for target in introspect["targets"]:
         if "filename" in target:
-            filenames.extend(target["filename"])
+            filenames.extend([_escape_path(p) for p in target["filename"]])
         if "target_sources" in target:
             for target_sources in target["target_sources"]:
                 if "sources" in target_sources:
-                    sources.extend(target_sources["sources"])
+                    sources.extend([_escape_path(p) for p in target_sources["sources"]])
 
+    # XXX: staging prefix is concatenated here after, escape path after concat.
     installed = introspect["installed"]
 
-    compile_implicit_outputs = set(installed.keys())
-    compile_implicit_inputs = set(buildsys_files + sources)
+    compile_implicit_outputs = set([_escape_path(p) for p in installed.keys()])
+    compile_implicit_inputs = set([_escape_path(p) for p in buildsys_files + sources])
     compile_implicit_inputs.difference_update(set(filenames))
 
     install_implicit_inputs = compile_implicit_outputs
-    install_implicit_outputs = set([stagingdir / f[1:] for f in installed.values()])
+
+    install_implicit_outputs = set()
+    for file in installed.values():
+        _path = Path(file)
+        # XXX:
+        # Concatenation between 2 absolute path, makes no sense at all, if install path is
+        # absolute, remove first part before destdir prefix concatenation.
+        # i.e.:
+        #  - leading "/" for Posix path
+        #  - drive letter for Windows path
+        if _path.is_absolute():
+            _path = stagingdir.joinpath(*_path.parts[1:])
+        else:
+            _path = stagingdir.joinpath(_path)
+        install_implicit_outputs.add(_escape_path(str(_path)))
 
     with output.open("w") as dyndep:
         dyndep.write("ninja_dyndep_version = 1\n")
