@@ -27,7 +27,7 @@ dependencies = [
     "ninja_syntax>1.7",
     "pyledger-logger>=0.0.1",
     "pyledger-svd2json>=0.1.4",
-    "pyledger-devicetree-parser>=0.0.7",
+    "pyledger-devicetree-parser>=0.1.0",
     "tomli>=2.0.1; python_version < '3.11'",
     "referencing>=0.33.0",
     "GitPython>=3.1.0",
