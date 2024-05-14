@@ -13,7 +13,14 @@ def run_kernel_fixup(kern_input: Path, kern_output: Path, metadata: list[Path]) 
     task_meta_tbl = bytearray()
 
     for datum in metadata:
-        task_meta_tbl.extend(datum.read_bytes())
+        blob = datum.read_bytes()
+
+        # XXX:
+        # fixme
+        # put table size in sentry elf in order to retrieve padding between entries
+        task_meta_tbl.extend(blob)
+        if len(blob) % 8:
+            task_meta_tbl.extend(bytes([0] * (len(blob) % 8)))
 
     kernel.patch_task_list(task_meta_tbl)
     kernel.save()
