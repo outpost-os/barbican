@@ -26,7 +26,7 @@ dependencies = [
     "ninja>=1.11.0",
     "ninja_syntax>1.7",
     "pyledger-logger>=0.0.1",
-    "pyledger-svd2json>=0.1.3",
+    "pyledger-svd2json>=0.1.4",
     "pyledger-devicetree-parser>=0.0.7",
     "tomli>=2.0.1; python_version < '3.11'",
     "referencing>=0.33.0",
