@@ -2,78 +2,103 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from argparse import ArgumentParser
+import json
+import os
 from pathlib import Path
-import random
+import subprocess
 import typing as T
 
-from .. import logger
-from ..relocation.task_meta import TaskMeta, EXIT_MODES
+from ..utils.environment import find_program
+from ..utils.pathhelper import ProjectPathHelper
 from ..relocation.elfutils import AppElf
 from ..utils import align_to
 
 
-def run_gen_task_metadata_bin(input: Path, output: Path) -> None:
+def _gen_metadata(output: Path, metadata: dict[str, T.Any], pathhelper: ProjectPathHelper) -> None:
+    genmetata = find_program("genmetadata", pathhelper.bindir)
+    cmdline = [
+        genmetata,
+        "-o",
+        str(output.resolve()),
+        f"{json.dumps(metadata)}",
+    ]
+    subprocess.run(cmdline, check=True)
+
+
+def run_gen_task_metadata_bin(input: Path, output: Path, pathhelper: ProjectPathHelper) -> None:
+    # Package metadata supports only string, convert package meta to task meta and generates blob
     elf = AppElf(str(input.resolve()), None)
-    meta = TaskMeta()
+    task_metadata = elf.get_package_metadata("task")
 
-    meta.magic = int(elf.get_package_metadata("task", "magic_value"), base=16)
-    meta.version = 1
+    task_metadata["version"] = 1
 
-    try:
-        meta.label = int(elf.get_package_metadata("task", "label"), base=16)
-    except KeyError:
-        meta.label = random.getrandbits(32)
-        logger.warning(f"undefined task label in {elf.name} package metadata")
-        logger.warning(f"using a randomly generated one ({meta.label:#08x})")
-    except Exception:
-        # Fail fast on other error(s)
-        raise
-    meta.priority = int(elf.get_package_metadata("task", "priority"), base=10)
-    meta.quantum = int(elf.get_package_metadata("task", "quantum"), base=10)
-    meta.capabilities = 0  # XXX todo
+    # XXX: fix task.kconfig
+    if "magic_value" in task_metadata.keys():
+        task_metadata["magic"] = task_metadata["magic_value"]
+        task_metadata.pop("magic_value")
 
-    meta.flags.autostart_mode = bool(elf.get_package_metadata("task", "auto_start"))
+    job_flags = []
+    for flag in ["auto_start", "exit"]:
+        f = next((k for k in task_metadata.keys() if flag in k), None)
+        if f is not None:
+            job_flags.append(f)
 
-    for mode in EXIT_MODES:
-        enabled = False
-        try:
-            enabled = bool(elf.get_package_metadata("task", f"exit_{mode}"))
-        except Exception:
-            pass
-        finally:
-            if enabled:
-                meta.flags.exit_mode = mode
-                break
+    task_metadata["flags"] = job_flags
+    [task_metadata.pop(key, None) for key in job_flags]
 
-    meta.domain = 0
+    for entry in ["heap_size", "stack_size", "label", "magic"]:
+        task_metadata[entry] = int(task_metadata[entry], base=16)
 
-    meta.s_text, text_size = elf.get_section_info(".text")
+    for entry in ["priority", "quantum"]:
+        task_metadata[entry] = int(task_metadata[entry], base=10)
+
+    task_metadata["s_text"], text_size = elf.get_section_info(".text")
     _, ARM_size = elf.get_section_info(".ARM")
-    meta.text_size = align_to(text_size, 4) + align_to(ARM_size, 4)
-    meta.s_got, meta.got_size = elf.get_section_info(".got")
-    # XXX: rodata are included in .text section
-    # _, meta.rodata_size = elf.get_section_info(".rodata")
-    meta.s_svcexchange, _ = elf.get_section_info(".svcexchange")
-    _, meta.data_size = elf.get_section_info(".data")
-    _, meta.bss_size = elf.get_section_info(".bss")
-    meta.heap_size = int(elf.get_package_metadata("task", "heap_size"), base=16)
-    meta.stack_size = int(elf.get_package_metadata("task", "stack_size"), base=16)
+    task_metadata["text_size"] = align_to(text_size, 4) + align_to(ARM_size, 4)
+    task_metadata["s_got"], task_metadata["got_size"] = elf.get_section_info(".got")
 
-    meta.entrypoint_offset = elf.get_symbol_offset_from_section("_start", ".text")
+    task_metadata["s_svcexchange"], _ = elf.get_section_info(".svcexchange")
+    _, task_metadata["data_size"] = elf.get_section_info(".data")
+    _, task_metadata["bss_size"] = elf.get_section_info(".bss")
+
+    task_metadata["entrypoint_offset"] = elf.get_symbol_offset_from_section("_start", ".text")
     # TODO
-    # meta.finalize_offset = elf.get_symbol_offset_from_section("_exit", ".text")
+    task_metadata["domain"] = 0
+    task_metadata["rodata_size"] = 0
+    # task_metadata["finalize_offset"] = elf.get_symbol_offset_from_section("_exit", ".text")
+    task_metadata["finalize_offset"] = 0
 
-    # TODO all others fields
-    #  - this will be done in the heavy tools in c/c++ (or Rust ?) for
-    # consistency/maintainability/robustness reason (code duplication avoidance).
+    task_metadata["num_devs"] = len(task_metadata["devs"])
+    task_metadata["shms"] = []
+    task_metadata["num_shms"] = len(task_metadata["shms"])
+    task_metadata["dmas"] = []
+    task_metadata["num_dmas"] = len(task_metadata["dmas"])
 
-    output.write_bytes(meta.pack())
+    task_metadata["task_hmac"] = []
+    task_metadata["metadata_hmac"] = []
+
+    _gen_metadata(output, {"task_meta": task_metadata}, pathhelper)
 
 
 def run(argv: T.List[str]) -> None:
     parser = ArgumentParser()
     parser.add_argument("output", type=Path, help="output elf file")
     parser.add_argument("input", type=Path, help="partially linked input elf")
+    parser.add_argument(
+        "projectdir",
+        type=Path,
+        action="store",
+        default=os.getcwd(),
+        nargs="?",
+        help="top level project directory",
+    )
+    parser.add_argument(
+        "--prefix", type=str, default=os.path.join("usr", "local"), help="install staging prefix"
+    )
     args = parser.parse_args(argv)
 
-    run_gen_task_metadata_bin(args.input, args.output)
+    print(args.projectdir)
+
+    run_gen_task_metadata_bin(
+        args.input, args.output, ProjectPathHelper(args.projectdir, args.prefix)
+    )
