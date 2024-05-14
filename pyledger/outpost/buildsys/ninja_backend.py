@@ -53,7 +53,7 @@ class NinjaGenFile:
             "capture_out": "$out $cmdline",
             "gen_ldscript": "--name=$name $template $in $out",
             "gen_memory_layout": "--prefix=$prefix $out $projectdir",
-            "gen_task_metadata_bin": "$out $in",
+            "gen_task_metadata_bin": "$out $in $projectdir",
             "kernel_fixup": "$out $in",
             "meson_package_dyndep": "--name=$name -j $json $builddir $stagingdir $out",
             "objcopy": "$out $in --format=$format $extra_option",
@@ -196,7 +196,7 @@ class NinjaGenFile:
             },
         )
 
-    def add_gen_metadata_rule(self, input: Path, output: Path) -> None:
+    def add_gen_metadata_rule(self, input: Path, output: Path, projectdir: Path) -> None:
         self._ninja.newline()
         self._ninja.build(
             rule="internal",
@@ -204,7 +204,7 @@ class NinjaGenFile:
             inputs=[str(input)],
             variables={
                 "cmd": "gen_task_metadata_bin",
-                "args": f"{str(output)} {str(input)}",
+                "args": f"{str(output)} {str(input)} {str(projectdir)}",
                 "description": f"generate task {input.stem} metadata",
             },
         )

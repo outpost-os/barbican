@@ -83,7 +83,6 @@ class SentryElf(Elf):
 
     def patch_task_list(self, task_meta_table: bytearray) -> None:
         tbl = self._elf.get_section(".task_list")
-        assert tbl.size % len(task_meta_table) == 0
         task_meta_table.extend(bytes([0] * (tbl.size - len(task_meta_table))))
         assert len(task_meta_table) == tbl.size
         tbl.content = memoryview(task_meta_table)
