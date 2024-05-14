@@ -216,7 +216,7 @@ class Project:
                 ninja.add_objcopy_rule(elf_out, hex_out, "ihex", [], package.name)
                 app_hex_files.append(hex_out)
 
-                ninja.add_gen_metadata_rule(elf_out, metadata_out)
+                ninja.add_gen_metadata_rule(elf_out, metadata_out, pathlib.Path(self.topdir))
                 app_metadata.append(metadata_out)
 
         # Patch kernel/objcopy
