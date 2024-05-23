@@ -135,10 +135,9 @@ class AppElf(Elf):
     @property
     def flash_size(self) -> int:
         flash_size = 0
-        for section in AppElf.FLASH_SECTIONS:
-            _, size = self.get_section_info(section)
-            flash_size = flash_size + size
-        return flash_size
+        stext = self.get_symbol_address("_stext")
+        erom = self.get_symbol_address("_erom")
+        return erom - stext
 
     @property
     def stack_size(self) -> int:
