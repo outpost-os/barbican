@@ -134,7 +134,6 @@ class AppElf(Elf):
 
     @property
     def flash_size(self) -> int:
-        flash_size = 0
         stext = self.get_symbol_address("_stext")
         erom = self.get_symbol_address("_erom")
         return erom - stext
