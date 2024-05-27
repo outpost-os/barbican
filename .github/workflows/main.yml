@@ -37,6 +37,9 @@ jobs:
     - name: Lint
       run: |
         tox -e lint
+    - name: Licenses compliance
+      run: |
+        tox -e licenses
 
   getversion:
     runs-on: orange-classic
