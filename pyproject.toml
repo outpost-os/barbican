@@ -17,7 +17,6 @@ authors = [
 ]
 license = {file = "LICENSES/Apache-2.0.txt"}
 dependencies = [
-    "cstruct>=5.2,<6.0",
     "Jinja2>=3.1.0",
     "jinja-cli>=1.2.0",
     "jsonschema>=4.18.0",

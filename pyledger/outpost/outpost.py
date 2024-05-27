@@ -21,7 +21,6 @@ from . import logger  # type: ignore
 from . import config
 from .package import Package
 from .buildsys import ninja_backend
-from .relocation import relocate_project
 
 
 class Project:
@@ -243,9 +242,6 @@ class Project:
 
         ninja.close()
 
-    def relocate(self) -> None:
-        relocate_project(self)
-
 
 def download(project: Project) -> None:
     project.download()
@@ -253,10 +249,6 @@ def download(project: Project) -> None:
 
 def setup(project: Project) -> None:
     project.setup()
-
-
-def relocate(project: Project) -> None:
-    project.relocate()
 
 
 def common_argument_parser() -> ArgumentParser:
@@ -299,9 +291,6 @@ def main_argument_parser() -> ArgumentParser:
         "setup", help="setup help", parents=[common_parser]
     )
     setup_cmd_parser.set_defaults(func=setup)
-
-    relocate_cmd = cmd_subparsers.add_parser("relocate", help="reloc help", parents=[common_parser])
-    relocate_cmd.set_defaults(func=relocate)
 
     return parser
 
