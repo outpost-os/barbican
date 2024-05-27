@@ -12,7 +12,7 @@ dynamic = ["version"]
 requires-python = ">= 3.10"
 readme = "README.md"
 authors = [
-  {email = "Ledger SA <firmware@ledger.fr>"},
+  {email = "Ledger SAS <firmware@ledger.fr>"},
 ]
 license = {file = "LICENSES/Apache-2.0.txt"}
 dependencies = [
