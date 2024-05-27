@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 Ledger SAS
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Ledger python package template repository
 
 This repository is made in order to be used as a clean

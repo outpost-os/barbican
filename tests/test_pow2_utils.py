@@ -1,4 +1,5 @@
-# SPDX-FileCopyrightText: 2023 Ledger SAS
+# SPDX-FileCopyrightText: 2023 - 2024 Ledger SAS
+#
 # SPDX-License-Identifier: Apache-2.0
 
 from pyledger.outpost.utils import pow2_greatest_divisor, pow2_round_up, align_to

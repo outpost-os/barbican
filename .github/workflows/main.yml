@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Continuous Integration
 
 on:
@@ -37,6 +41,9 @@ jobs:
     - name: Lint
       run: |
         tox -e lint
+    - name: Licenses compliance
+      run: |
+        tox -e licenses
 
   getversion:
     runs-on: orange-classic
