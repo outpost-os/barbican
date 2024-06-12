@@ -14,6 +14,12 @@ if TYPE_CHECKING:
     from ..package import Package
 
 
+# XXX:
+#  Need API change
+#  Use config node as argument as it depends on SCM derived class
+#  At least, `name` and `sourcedir` are common among SCMs
+
+
 class ScmBaseClass(ABC):
     def __init__(self, package: "Package") -> None:
         self._package = package
