@@ -16,7 +16,13 @@ from .__version__ import __version__
 __all__ = ["__version__", "Project"]
 
 import logging
-from pyledger.logger import ColorLogger  # type: ignore
+from rich.logging import RichHandler
 
-logging.setLoggerClass(ColorLogger)
+logging.basicConfig(
+    level="NOTSET",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+
 logger = logging.getLogger(__name__)
