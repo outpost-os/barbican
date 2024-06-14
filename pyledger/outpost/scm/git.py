@@ -110,18 +110,27 @@ class Git(ScmBaseClass):
         )
 
     def fetch(self) -> None:
-        subprocess.run(["git", "fetch", "--all"])
+        logger.info(f"git fetch {self.name} origin/{self.revision}")
 
-    def checkout(self) -> None:
-        subprocess.run(["git", "switch", f"{self.revision}"])
-
-    def git_toplevel_directory(self) -> str:
-        """return the git top level directory from cwd"""
-        return (
-            subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)
-            .stdout.strip()
-            .decode()
+        # Check if revision is already tracked,
+        # if not, refspec must be `revision:revision`
+        # `revision` otherwise
+        refspec = f"{self.revision}:{self.revision}"
+        for ref in self._repo.branches:
+            if self.revision in ref.name:
+                # trim after colon if any
+                refspec, _ = refspec.split(":", 1)
+        self._repo.remotes.origin.fetch(
+            refspec=refspec, verbose=False, progress=GitProgressBar(),  # type: ignore
         )
+
+    def reset(self) -> None:
+        self._repo.git.reset(["--hard", self.revision])
+        logger.info(f"git checkout {self.name}@{self._repo.heads[0].name} ({self._repo.heads[0].commit})")
+
+    def clean(self) -> None:
+        logger.info(f"git clean {self.name}")
+        self._repo.git.clean(["-ffdx"])
 
     def _download(self) -> None:
         if self._repo:
@@ -136,6 +145,24 @@ class Git(ScmBaseClass):
         print("[b]Done.[/b]")
 
     def _update(self) -> None:
+        if self._repo.is_dirty():
+            print(f"[b dark_orange]{self.name} is dirty, cannot update[/b dark_orange]")
+            logger.warning(f"{self.name} is dirty, cannot update")
+            return
+
+        print(f"[b]Updating [i]{self.name}[/i] (revision={self.revision})...[/b]")
+        old_ref = self._repo.head.commit
+
         self.fetch()
-        self.checkout()
-        self._package.post_update_hook()
+        self.reset()
+        self.clean()
+
+        new_ref = self._repo.head.commit
+
+        if old_ref == new_ref:
+            print("[b]Already up-to-date[/b]")
+        else:
+            print(f"[b][i]{self.name}[/i] updated {old_ref}→ {new_ref}[/b]")
+
+        with status.Status("  Running post update hook", spinner="moon"):
+            self._package.post_update_hook()
