@@ -140,9 +140,9 @@ class Package:
 
     @working_directory_attr("sourcedir")
     def post_download_hook(self):
-        subprocess.run(["meson", "subprojects", "download"])
+        subprocess.run(["meson", "subprojects", "download"], capture_output=True)
 
     @working_directory_attr("sourcedir")
     def post_update_hook(self):
-        subprocess.run(["meson", "subprojects", "download"])
-        subprocess.run(["meson", "subprojects", "update"])
+        subprocess.run(["meson", "subprojects", "download"], capture_output=True)
+        subprocess.run(["meson", "subprojects", "update"], capture_output=True)
