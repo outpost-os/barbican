@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import subprocess
-
 from git import Repo, RemoteProgress
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 
@@ -95,7 +93,7 @@ class GitProgressBar(RemoteProgress):
 class Git(ScmBaseClass):
     def __init__(self, package: "Package") -> None:
         super().__init__(package)
-        self._repo: Optional[Repo] = None
+        self._repo: Repo
         try:
             self._repo = Repo(package.sourcedir)
         except NoSuchPathError:
@@ -121,7 +119,7 @@ class Git(ScmBaseClass):
         # if not, refspec must be `revision:revision`
         # `revision` otherwise
         refspec = f"{self.revision}:{self.revision}"
-        for ref in self._repo.branches:
+        for ref in self._repo.heads:
             if self.revision in ref.name:
                 # trim after colon if any
                 refspec, _ = refspec.split(":", 1)
