@@ -247,6 +247,10 @@ def download(project: Project) -> None:
     project.download()
 
 
+def update(project: Project) -> None:
+    project.update()
+
+
 def setup(project: Project) -> None:
     project.setup()
 
@@ -286,6 +290,11 @@ def main_argument_parser() -> ArgumentParser:
         "download", help="download help", parents=[common_parser]
     )
     download_cmd_parser.set_defaults(func=download)
+
+    update_cmd_parser = cmd_subparsers.add_parser(
+        "update", help="update help", parents=[common_parser]
+    )
+    update_cmd_parser.set_defaults(func=update)
 
     setup_cmd_parser = cmd_subparsers.add_parser(
         "setup", help="setup help", parents=[common_parser]
