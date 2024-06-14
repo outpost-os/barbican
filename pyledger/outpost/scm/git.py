@@ -46,11 +46,10 @@ class GitProgressBar(RemoteProgress):
             progress.TextColumn("{task.fields[message]}"),
             transient=False,
         )
-        self._progressbar.start()
-        # self._active_task: Optional[progress.TaskID] = None
 
     def __del__(self) -> None:
-        self._progressbar.stop()
+        if self._progressbar.live.is_started:
+            self._progressbar.stop()
 
     @classmethod
     def get_curr_op(cls, op_code: int) -> str:
@@ -67,6 +66,10 @@ class GitProgressBar(RemoteProgress):
     ) -> None:
         # Start new bar on each BEGIN-flag
         if op_code & self.BEGIN:
+            # Start rendering at first task insertion
+            if not self._progressbar.live.is_started:
+                self._progressbar.start()
+
             self.curr_op = self.get_curr_op(op_code)
             self._active_task = self._progressbar.add_task(
                 description=self.curr_op,
