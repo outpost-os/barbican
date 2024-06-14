@@ -125,13 +125,13 @@ class Git(ScmBaseClass):
             if self.revision in ref.name:
                 # trim after colon if any
                 refspec, _ = refspec.split(":", 1)
-        self._repo.remotes.origin.fetch(
-            refspec=refspec, verbose=False, progress=GitProgressBar(),  # type: ignore
-        )
+        self._repo.remotes.origin.fetch(refspec=refspec, progress=GitProgressBar())  # type: ignore
 
     def reset(self) -> None:
         self._repo.git.reset(["--hard", self.revision])
-        logger.info(f"git checkout {self.name}@{self._repo.heads[0].name} ({self._repo.heads[0].commit})")
+        logger.info(
+            f"git checkout {self.name}@{self._repo.heads[0].name} ({self._repo.heads[0].commit})"
+        )
 
     def clean(self) -> None:
         logger.info(f"git clean {self.name}")
