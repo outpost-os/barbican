@@ -110,7 +110,9 @@ class Git(ScmBaseClass):
             to_path=self.name,
             progress=GitProgressBar(),  # type: ignore
             branch=self.revision,
+            single_branch=True,
         )
+        logger.info(f"git clone {self.name}@{self.revision} ({self._repo.head.commit})")
 
     def fetch(self) -> None:
         logger.info(f"git fetch {self.name} origin/{self.revision}")
@@ -141,7 +143,7 @@ class Git(ScmBaseClass):
             logger.info(f"{self.name} already clone, skip")
             return
 
-        print(f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})... [/b]")
+        print(f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]")
         self.clone()
         with status.Status("  Running post clone hook", spinner="moon"):
             self._package.post_download_hook()
