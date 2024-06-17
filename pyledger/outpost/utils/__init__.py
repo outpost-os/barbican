@@ -5,7 +5,7 @@
 import os
 import math
 
-from pyledger.outpost import logger
+from ..logger import logger
 
 
 class _WorkingDir:

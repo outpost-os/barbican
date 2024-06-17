@@ -9,7 +9,7 @@ import codecs
 
 import typing
 
-from pyledger.outpost import logger
+from ..logger import logger
 
 
 class Elf:

@@ -7,7 +7,7 @@ import shutil
 import typing as T
 from pathlib import Path
 
-from .. import logger
+from ..logger import logger
 
 
 _PROGRAM_CACHE_DICT: dict[str | bytes, str | bytes] = {}

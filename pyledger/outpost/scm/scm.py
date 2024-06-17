@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 import os
 
-from .. import logger
+from ..logger import logger
 from ..utils import working_directory_attr
 
 from typing import TYPE_CHECKING

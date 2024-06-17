@@ -5,7 +5,7 @@
 from git import Repo, RemoteProgress
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 
-from .. import logger
+from ..logger import logger
 
 from .scm import ScmBaseClass
 
@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Optional, cast
 if TYPE_CHECKING:
     from pyledger.outpost.package import Package
 
-from rich import print, progress, status
+from ..console import console
 
 
 class GitProgressBar(RemoteProgress):
@@ -34,16 +34,7 @@ class GitProgressBar(RemoteProgress):
 
     def __init__(self) -> None:
         super().__init__()
-        self._progressbar = progress.Progress(
-            progress.SpinnerColumn(),
-            progress.TextColumn("[progress.description]{task.description}"),
-            progress.BarColumn(),
-            progress.TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            "eta",
-            progress.TimeRemainingColumn(),
-            progress.TextColumn("{task.fields[message]}"),
-            transient=False,
-        )
+        self._progressbar = console.progress_bar()
 
     def __del__(self) -> None:
         if self._progressbar.live.is_started:
@@ -136,24 +127,24 @@ class Git(ScmBaseClass):
         self._repo.git.clean(["-ffdx"])
 
     def _download(self) -> None:
-        if self._repo:
-            print(f"[b]{self.name} already clone, skip[/b]")
-            logger.info(f"{self.name} already clone, skip")
+        if hasattr(self, "_repo"):
+            console.message(f"[b]{self.name} already clone, skip[/b]")
             return
 
-        print(f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]")
+        console.message(
+            f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]"
+        )
         self.clone()
-        with status.Status("  Running post clone hook", spinner="moon"):
+        with console.status("Running post clone hook"):
             self._package.post_download_hook()
-        print("[b]Done.[/b]")
+        console.message("[b]Done.[/b]")
 
     def _update(self) -> None:
         if self._repo.is_dirty():
-            print(f"[b dark_orange]{self.name} is dirty, cannot update[/b dark_orange]")
-            logger.warning(f"{self.name} is dirty, cannot update")
+            console.warning(f"{self.name} is dirty, cannot update")
             return
 
-        print(f"[b]Updating [i]{self.name}[/i] (revision={self.revision})...[/b]")
+        console.message(f"[b]Updating [i]{self.name}[/i] (revision={self.revision})...[/b]")
         old_ref = self._repo.head.commit
 
         self.fetch()
@@ -163,9 +154,9 @@ class Git(ScmBaseClass):
         new_ref = self._repo.head.commit
 
         if old_ref == new_ref:
-            print("[b]Already up-to-date[/b]")
+            console.message("[b]Already up-to-date[/b]")
         else:
-            print(f"[b][i]{self.name}[/i] updated {old_ref}→ {new_ref}[/b]")
+            console.message(f"[b][i]{self.name}[/i] updated {old_ref}→ {new_ref}[/b]")
 
-        with status.Status("  Running post update hook", spinner="moon"):
+        with console.status("Running post update hook"):
             self._package.post_update_hook()
