@@ -74,8 +74,6 @@ class Console:
             raise ValueError
         elif theme == "title":
             return logging.DEBUG
-        elif theme == "message":
-            return logging.INFO
         elif theme == "deprecated":
             return logging.WARNING
         else:
@@ -87,7 +85,7 @@ class Console:
 
     def message(self, message: str) -> None:
         self._log(logging.INFO, message)
-        self._console.print(f"  {message}")
+        self._console.print(f"{message}")
 
     def __getattr__(self, name: str) -> Any:
         def __default(message) -> None:
