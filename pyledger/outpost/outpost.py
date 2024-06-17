@@ -17,7 +17,7 @@ import pathlib
 import sys
 import typing as T
 
-from . import logger  # type: ignore
+from .logger import logger, log_config
 from . import config
 from .package import Package
 from .buildsys import ninja_backend
@@ -308,12 +308,12 @@ def run_command() -> None:
     """Run an outpost command"""
     args = main_argument_parser().parse_args()
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        log_config.set_console_log_level(logging.DEBUG)
     elif args.quiet:
-        logger.setLevel(logging.ERROR)
+        log_config.set_console_log_level(logging.ERROR)
     else:
         lvl = logging.getLevelName(args.log_level.upper())
-        logger.setLevel(lvl)
+        log_config.set_console_log_level(lvl)
 
     project = Project(os.path.join(args.projectdir, "project.toml"))
     args.func(project)
