@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Optional, cast
 if TYPE_CHECKING:
     from pyledger.outpost.package import Package
 
-from rich import print
 from ..console import console
 
 
@@ -132,7 +131,9 @@ class Git(ScmBaseClass):
             console.message(f"[b]{self.name} already clone, skip[/b]")
             return
 
-        console.message(f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]")
+        console.message(
+            f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]"
+        )
         self.clone()
         with console.status("Running post clone hook"):
             self._package.post_download_hook()
