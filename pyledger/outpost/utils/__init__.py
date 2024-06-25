@@ -5,8 +5,19 @@
 import os
 import math
 
+from enum import Enum
+
 from ..logger import logger
 
+
+# XXX:
+#  StrEnum is a python 3.11+ feature but as simple as the following.
+try:
+    from enum import StrEnum
+except ImportError:
+    class StrEnum(Enum):
+        def _generate_next_value_(name: str, start, count, last_values) -> str:
+            return name.lower()
 
 class _WorkingDir:
     """Helper class for the following decorators"""
