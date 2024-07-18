@@ -21,7 +21,7 @@ from .logger import logger, log_config
 from . import config
 from .package import Package
 from .buildsys import ninja_backend
-
+from .utils import pathhelper
 
 class Project:
     INSTALL_PREFIX = os.path.join("usr", "local")
@@ -30,6 +30,15 @@ class Project:
         assert isinstance(toml_filename, os.PathLike) or isinstance(
             toml_filename, str
         ), "argument must be a PathLike or str"
+
+        # XXX
+        project_dir = pathlib.Path(toml_filename).parent
+        self.path = pathhelper.ProjectPath(
+            project_dir=project_dir,
+            output_dir=project_dir,
+        )
+        self.path.mkdirs()
+        self.path.save()
 
         self._topdir = os.path.dirname(os.path.abspath(toml_filename))
         self._sourcedir = os.path.join(self.topdir, "src")
