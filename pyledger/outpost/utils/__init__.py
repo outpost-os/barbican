@@ -17,7 +17,7 @@ try:
 except ImportError:
     class StrEnum(Enum):
         def _generate_next_value_(name: str, start, count, last_values) -> str:
-            return name.lower()
+            return name.replace("_", "-").lower()
 
 class _WorkingDir:
     """Helper class for the following decorators"""
