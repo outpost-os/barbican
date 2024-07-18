@@ -76,12 +76,19 @@ class NinjaGenFile:
 
     def add_outpost_targets(self, project: "Project") -> None:
         self._ninja.newline()
+        project_implicit_deps = [
+            str(project.path.config_full_path),
+            str(project.path.save_full_path),
+        ]
+        self._ninja.build(project_implicit_deps, "phony")
         self._ninja.build(
             "build.ninja",
             "outpost_reconfigure",
             variables={"projectdir": project.topdir},
-            implicit=os.path.join(project.topdir, "project.toml"),
+            implicit=project_implicit_deps,
         )
+
+
 
     def add_outpost_dts(self, dts: Path, dts_include_dirs: list[Path]) -> None:
         self._ninja.newline()
