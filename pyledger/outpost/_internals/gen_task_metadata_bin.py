@@ -10,13 +10,15 @@ import subprocess
 import typing as T
 
 from ..utils.environment import find_program
-from ..utils.pathhelper import ProjectPathHelper
+from ..utils.pathhelper import ProjectPath
 from ..relocation.elfutils import AppElf
 from ..utils import align_to
 
 
-def _gen_metadata(output: Path, metadata: dict[str, T.Any], pathhelper: ProjectPathHelper) -> None:
-    genmetata = find_program("genmetadata", pathhelper.bindir)
+def _gen_metadata(output: Path, metadata: dict[str, T.Any], path: ProjectPath) -> None:
+    # XXX:
+    # Path manually forge for now, need sdk native tool bin support
+    genmetata = find_program("genmetadata", Path(path.staging_dir, path.rel_prefix, "bin"))
     cmdline = [
         genmetata,
         "-o",
@@ -26,7 +28,7 @@ def _gen_metadata(output: Path, metadata: dict[str, T.Any], pathhelper: ProjectP
     subprocess.run(cmdline, check=True)
 
 
-def run_gen_task_metadata_bin(input: Path, output: Path, pathhelper: ProjectPathHelper) -> None:
+def run_gen_task_metadata_bin(input: Path, output: Path, path: ProjectPath) -> None:
     # Package metadata supports only string, convert package meta to task meta and generates blob
     elf = AppElf(str(input.resolve()), None)
     task_metadata = elf.get_package_metadata("task")
@@ -78,7 +80,7 @@ def run_gen_task_metadata_bin(input: Path, output: Path, pathhelper: ProjectPath
     task_metadata["task_hmac"] = []
     task_metadata["metadata_hmac"] = []
 
-    _gen_metadata(output, {"task_meta": task_metadata}, pathhelper)
+    _gen_metadata(output, {"task_meta": task_metadata}, path)
 
 
 def run(argv: T.List[str]) -> None:
@@ -101,5 +103,5 @@ def run(argv: T.List[str]) -> None:
     print(args.projectdir)
 
     run_gen_task_metadata_bin(
-        args.input, args.output, ProjectPathHelper(args.projectdir, args.prefix)
+        args.input, args.output, ProjectPath.load(args.projectdir / "build")
     )
