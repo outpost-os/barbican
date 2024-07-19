@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import ninja_syntax  # type: ignore
 
 from pathlib import Path

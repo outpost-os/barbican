@@ -102,7 +102,7 @@ class ProjectPath:
         """Load project path for a given builddir from json"""
         try:
             file = (build_dir / DirName.Outpost_Private.value / cls.filename).resolve(strict=True)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             # XXX: dedicated error
             console.critical(f"{cls.filename} not found, please try to re run [i]setup[/i] command")
             raise

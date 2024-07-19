@@ -8,6 +8,7 @@ import os
 from ..logger import logger
 from ..utils import working_directory_attr
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -36,11 +37,11 @@ class ScmBaseClass(ABC):
         self._update()
 
     @property
-    def project_sourcedir(self) -> str:
+    def project_sourcedir(self) -> Path:
         return self._package.parent.path.src_dir
 
     @property
-    def sourcedir(self) -> str:
+    def sourcedir(self) -> Path:
         return self._package.src_dir
 
     @property

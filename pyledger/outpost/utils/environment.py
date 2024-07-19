@@ -7,15 +7,6 @@ import shutil
 import typing as T
 from pathlib import Path
 
-# XXX:
-# tomllib is the standard buildt-in toml library since python 3.11
-# prior to 3.11, use tomli instead (reference implementation that became the standard).
-try:
-    import tomllib  # type: ignore
-except ModuleNotFoundError:
-    import tomli as tomllib
-
-from ..config import validate as config_schema_validate
 from ..logger import logger
 
 
