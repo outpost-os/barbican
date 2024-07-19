@@ -15,9 +15,11 @@ from ..logger import logger
 try:
     from enum import StrEnum
 except ImportError:
+
     class StrEnum(Enum):
         def _generate_next_value_(name: str, start, count, last_values) -> str:
             return name.replace("_", "-").lower()
+
 
 class _WorkingDir:
     """Helper class for the following decorators"""

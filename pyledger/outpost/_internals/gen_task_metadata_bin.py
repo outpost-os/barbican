@@ -99,9 +99,5 @@ def run(argv: T.List[str]) -> None:
         "--prefix", type=str, default=os.path.join("usr", "local"), help="install staging prefix"
     )
     args = parser.parse_args(argv)
-
-    print(args.projectdir)
-
-    run_gen_task_metadata_bin(
-        args.input, args.output, ProjectPath.load(args.projectdir / "build")
-    )
+    # XXX: use builddir as option
+    run_gen_task_metadata_bin(args.input, args.output, ProjectPath.load(args.projectdir / "build"))

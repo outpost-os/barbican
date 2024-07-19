@@ -152,7 +152,9 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
       - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
     path = ProjectPath.load(projectdir / "build")
-    return run_gen_memory_layout(output, list((path.sysroot_dir / path.rel_prefix / "bin").glob("*.elf")))
+    return run_gen_memory_layout(
+        output, list((path.sysroot_dir / path.rel_prefix / "bin").glob("*.elf"))
+    )
 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:

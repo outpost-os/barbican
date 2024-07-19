@@ -12,6 +12,7 @@ from typing import ClassVar
 from . import StrEnum
 from ..console import console
 
+
 @unique
 class DirName(StrEnum):
     Bin = auto()
@@ -46,6 +47,7 @@ def default_prefix() -> Path:
         This path is absolute
     """
     import os
+
     if os.name == "nt":
         return Path("C:/")
     else:
@@ -99,12 +101,12 @@ class ProjectPath:
     def load(cls, build_dir: Path) -> "ProjectPath":
         """Load project path for a given builddir from json"""
         try:
-            file = (build_dir / DirName.Outpost_Private.value /cls.filename).resolve(strict=True)
+            file = (build_dir / DirName.Outpost_Private.value / cls.filename).resolve(strict=True)
         except FileNotFoundError as e:
             # XXX: dedicated error
             console.critical(f"{cls.filename} not found, please try to re run [i]setup[/i] command")
             raise
-        with file.open('r') as f:
+        with file.open("r") as f:
             data = json.load(f)
             return cls.from_dict(data)
 
@@ -173,6 +175,29 @@ class ProjectPath:
     @lru_cache
     def private_build_dir(self) -> Path:
         return self.build_dir / DirName.Outpost_Private.value
+
+    @property
+    @lru_cache
+    def target_bin_dir(self) -> Path:
+        # TODO: change to target dir, for compat (and temp) only, To Be Fixed later
+        return self.staging_dir / self.rel_prefix / DirName.Bin.value
+
+    @property
+    @lru_cache
+    def sysroot_lib_dir(self) -> Path:
+        # TODO: change to sysroot dir, for compat (and temp) only, To Be Fixed later
+        return self.staging_dir / self.rel_prefix / DirName.Lib.value
+
+    @property
+    @lru_cache
+    def sysroot_pkgconfig_dir(self) -> Path:
+        return self.sysroot_lib_dir / DirName.PkgConfig.value
+
+    @property
+    @lru_cache
+    def sysroot_data_dir(self) -> Path:
+        # TODO: change to sysroot dir, for compat (and temp) only, To Be Fixed later
+        return self.staging_dir / self.rel_prefix / DirName.Share.value
 
     def mkdirs(self, exist_ok: bool = True) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=exist_ok)

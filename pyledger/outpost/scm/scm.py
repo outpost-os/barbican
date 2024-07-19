@@ -37,11 +37,11 @@ class ScmBaseClass(ABC):
 
     @property
     def project_sourcedir(self) -> str:
-        return self._package.parent.sourcedir
+        return self._package.parent.path.src_dir
 
     @property
     def sourcedir(self) -> str:
-        return self._package.sourcedir
+        return self._package.src_dir
 
     @property
     def name(self) -> str:

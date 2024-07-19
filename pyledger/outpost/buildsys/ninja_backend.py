@@ -84,11 +84,9 @@ class NinjaGenFile:
         self._ninja.build(
             "build.ninja",
             "outpost_reconfigure",
-            variables={"projectdir": project.topdir},
+            variables={"projectdir": project.path.project_dir},
             implicit=project_implicit_deps,
         )
-
-
 
     def add_outpost_dts(self, dts: Path, dts_include_dirs: list[Path]) -> None:
         self._ninja.newline()
@@ -276,18 +274,18 @@ class NinjaGenFile:
     def add_meson_package(self, package: "Package") -> None:
         self._ninja.newline()
         self._ninja.build(
-            f"{package.builddir}/build.ninja",
+            f"{package.build_dir}/build.ninja",
             "meson_setup",
             variables={
-                "builddir": package.builddir,
-                "sourcedir": package.sourcedir,
+                "builddir": package.build_dir,
+                "sourcedir": package.src_dir,
                 "name": package.name,
                 "opts": package.build_opts,
             },
             order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )
         self._ninja.newline()
-        self._ninja.build(f"{package.name}_setup", "phony", f"{package.builddir}/build.ninja")
+        self._ninja.build(f"{package.name}_setup", "phony", f"{package.build_dir}/build.ninja")
         self._ninja.newline()
         self._ninja.build(
             f"{package.name}.dyndep",
@@ -295,8 +293,8 @@ class NinjaGenFile:
             order_only=f"{package.name}_setup",
             variables={
                 "name": package.name,
-                "builddir": package.builddir,
-                "stagingdir": package.stagingdir,
+                "builddir": package.build_dir,
+                "stagingdir": package.staging_dir,
                 "json": f"{package.name}_introspect.json",
             },
             implicit_outputs=f"{package.name}_introspect.json",
@@ -307,7 +305,7 @@ class NinjaGenFile:
             f"{package.name}_compile.stamp",
             "meson_compile",
             variables={
-                "builddir": package.builddir,
+                "builddir": package.build_dir,
                 "name": package.name,
                 "dyndep": f"{package.name}.dyndep",
             },
@@ -320,9 +318,9 @@ class NinjaGenFile:
             f"{package.name}_install.stamp",
             "meson_install",
             variables={
-                "builddir": package.builddir,
+                "builddir": package.build_dir,
                 "name": package.name,
-                "stagingdir": package.stagingdir,
+                "stagingdir": package.staging_dir,
                 "dyndep": f"{package.name}.dyndep",
             },
             order_only=f"{package.name}.dyndep",
