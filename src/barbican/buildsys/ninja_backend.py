@@ -18,34 +18,34 @@ class NinjaGenFile:
     def __init__(self, filename):
         self._raw_file = open(filename, "w")
         self._ninja = ninja_syntax.Writer(self._raw_file, width=1024)
-        self._ninja.comment("Outpost build.ninja")
+        self._ninja.comment("Barican build.ninja")
         self._ninja.comment("Auto generated file **DO NOT EDIT**")
 
     def close(self) -> None:
         """Close, and thus write to disk, ninja build file"""
         self._raw_file.close()
 
-    def add_outpost_rules(self) -> None:
+    def add_barbican_rules(self) -> None:
         self._ninja.newline()
-        self._ninja.comment("outpost executable")
-        self._ninja.variable("outpost", find_program("outpost"))
+        self._ninja.comment("barbican executable")
+        self._ninja.variable("barbican", find_program("barbican"))
         self._ninja.newline()
-        self._ninja.comment("outpost reconfiguration rule")
+        self._ninja.comment("barbican reconfiguration rule")
         self._ninja.rule(
-            "outpost_reconfigure",
-            description="outpost project reconfiguration",
+            "barbican_reconfigure",
+            description="barbican project reconfiguration",
             generator=True,
-            command="$outpost setup $projectdir",
+            command="$barbican setup $projectdir",
             pool="console",
         )
 
-    def add_outpost_internals_rules(self) -> None:
-        def _add_outpost_internal_rule(name: str, args: str) -> None:
+    def add_barbican_internals_rules(self) -> None:
+        def _add_barbican_internal_rule(name: str, args: str) -> None:
             self._ninja.newline()
             self._ninja.rule(
                 f"{name}",
-                description=f"outpost internal {name} command",
-                command=f"$outpost --internal {name} {args}",
+                description=f"barbican internal {name} command",
+                command=f"$barbican --internal {name} {args}",
                 pool="console",
             )
 
@@ -63,17 +63,17 @@ class NinjaGenFile:
 
         # XXX: to remove
         for command, args in internal_commands.items():
-            _add_outpost_internal_rule(command, args)
+            _add_barbican_internal_rule(command, args)
 
         self._ninja.newline()
         self._ninja.rule(
             "internal",
-            description="outpost internal command",
-            command="$outpost --internal $cmd $args",
+            description="barbican internal command",
+            command="$barbican --internal $cmd $args",
             pool="console",
         )
 
-    def add_outpost_targets(self, project: "Project") -> None:
+    def add_barbican_targets(self, project: "Project") -> None:
         self._ninja.newline()
         project_implicit_deps = [
             str(project.path.config_full_path),
@@ -82,17 +82,17 @@ class NinjaGenFile:
         self._ninja.build(project_implicit_deps, "phony")
         self._ninja.build(
             "build.ninja",
-            "outpost_reconfigure",
+            "barbican_reconfigure",
             variables={"projectdir": project.path.project_dir},
             implicit=project_implicit_deps,
         )
 
-    def add_outpost_dts(self, dts: Path, dts_include_dirs: list[Path]) -> None:
+    def add_barbican_dts(self, dts: Path, dts_include_dirs: list[Path]) -> None:
         self._ninja.newline()
         self._ninja.variable("dts", str(dts.resolve(strict=True)))
         self._ninja.variable("dtsincdir", ",".join([str(d.resolve()) for d in dts_include_dirs]))
 
-    def add_outpost_cross_file(self, crossfile: Path) -> None:
+    def add_barbican_cross_file(self, crossfile: Path) -> None:
         self._ninja.newline()
         self._ninja.variable("crossfile", str(crossfile))
 

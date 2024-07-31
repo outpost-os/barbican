@@ -55,7 +55,7 @@ Repository = "https://git.orange.ledgerlabs.net/outpost/python-outpost.git"
 Issues = "https://git.orange.ledgerlabs.net/outpost/python-outpost/issues"
 
 [project.scripts]
-outpost = "barbican.barbican:main"
+barbican = "barbican.barbican:main"
 
 [project.optional-dependencies]
 devel = [

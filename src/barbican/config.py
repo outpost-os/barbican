@@ -13,7 +13,7 @@ import typing as T
 _APPLICATION_SCHEMA = json.loads(
     """
 {
-    "$id": "urn:outpost:application",
+    "$id": "urn:barbican:application",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object"
 }
@@ -24,7 +24,7 @@ _APPLICATION_SCHEMA = json.loads(
 _LIBSHIELD_SCHEMA = json.loads(
     """
 {
-    "$id": "urn:outpost:libshield",
+    "$id": "urn:barbican:libshield",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object"
 }
@@ -35,7 +35,7 @@ _LIBSHIELD_SCHEMA = json.loads(
 _SENTRY_SCHEMA = json.loads(
     """
 {
-    "$id": "urn:outpost:sentry",
+    "$id": "urn:barbican:sentry",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object"
 }
@@ -49,9 +49,9 @@ _SENTRY_SCHEMA = json.loads(
 _PROJECT_SCHEMA = json.loads(
     """
 {
-    "$id": "urn:outpost:project",
+    "$id": "urn:barbican:project",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Outpost project TOML configuration",
+    "title": "barbican project TOML configuration",
     "type": "object",
     "properties": {
         "name": {
@@ -81,16 +81,16 @@ _PROJECT_SCHEMA = json.loads(
             "description": "meson cross file for arch mcu"
         },
         "sentry": {
-            "$ref": "urn:outpost:sentry"
+            "$ref": "urn:barbican:sentry"
         },
         "libshield": {
-            "$ref": "urn:outpost:libshield"
+            "$ref": "urn:barbican:libshield"
         },
         "app": {
             "patternProperties": {
                 ".*": {
                     "type": "object",
-                    "$ref": "urn:outpost:application"
+                    "$ref": "urn:barbican:application"
                 }
             },
             "additionalProperties": false
