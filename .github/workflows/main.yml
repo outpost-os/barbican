@@ -12,7 +12,7 @@ on:
 
 # to be updated when creating a repository
 env:
-  PROJECTNAME: "python-outpost"
+  PROJECTNAME: "barbican"
 
 defaults:
   run:

@@ -4,4 +4,4 @@
 
 from importlib import metadata
 
-__version__ = metadata.version("pyledger-outpost")
+__version__ = metadata.version("barbican")

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from pyledger.outpost.utils import pow2_greatest_divisor, pow2_round_up, align_to
+from barbican.utils import pow2_greatest_divisor, pow2_round_up, align_to
 
 
 def test_align_to():

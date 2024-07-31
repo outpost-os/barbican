@@ -294,7 +294,7 @@ def run_internal_command(cmd: str, argv: T.List[str]) -> None:
     """
     import importlib
 
-    module = importlib.import_module("pyledger.outpost._internals." + cmd)
+    module = importlib.import_module("barbican._internals." + cmd)
     module.run(argv)
 
 

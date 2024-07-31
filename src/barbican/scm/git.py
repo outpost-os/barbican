@@ -12,7 +12,7 @@ from .scm import ScmBaseClass
 from typing import TYPE_CHECKING, Optional, cast
 
 if TYPE_CHECKING:
-    from pyledger.outpost.package import Package
+    from ..package import Package
 
 from ..console import console
 
