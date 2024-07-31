@@ -86,7 +86,7 @@ class Git(ScmBaseClass):
         super().__init__(package)
         self._repo: Repo
         try:
-            self._repo = Repo(package.sourcedir)
+            self._repo = Repo(package.src_dir)
         except NoSuchPathError:
             logger.debug(f"{self.name} not cloned yet")
         except InvalidGitRepositoryError:

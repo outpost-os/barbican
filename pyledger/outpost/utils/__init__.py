@@ -4,8 +4,24 @@
 
 import os
 import math
+import typing as T
+from enum import Enum
 
 from ..logger import logger
+
+
+# XXX:
+#  StrEnum is a python 3.11+ feature but as simple as the following.
+try:
+    from enum import StrEnum  # type: ignore
+except ImportError:
+
+    class StrEnum(Enum):  # type: ignore
+        @staticmethod
+        def _generate_next_value_(
+            name: str, start: int, count: int, last_values: list[T.Any]
+        ) -> T.Any:
+            return name.replace("_", "-").lower()
 
 
 class _WorkingDir:

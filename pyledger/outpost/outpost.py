@@ -17,40 +17,31 @@ import pathlib
 import sys
 import typing as T
 
+from .console import console
 from .logger import logger, log_config
 from . import config
 from .package import Package
 from .buildsys import ninja_backend
+from .utils import pathhelper
 
 
 class Project:
-    INSTALL_PREFIX = os.path.join("usr", "local")
+    def __init__(self, project_dir: pathlib.Path) -> None:
+        self.path = pathhelper.ProjectPath(
+            project_dir=project_dir,
+            output_dir=project_dir,
+        )
 
-    def __init__(self, toml_filename: os.PathLike | str) -> None:
-        assert isinstance(toml_filename, os.PathLike) or isinstance(
-            toml_filename, str
-        ), "argument must be a PathLike or str"
-
-        self._topdir = os.path.dirname(os.path.abspath(toml_filename))
-        self._sourcedir = os.path.join(self.topdir, "src")
-        self._builddir = os.path.join(self.topdir, "build")
-        self._stagingdir = os.path.join(self.topdir, "staging")
-        self._outdir = os.path.join(self.topdir, "out")
-
-        with open(toml_filename, "rb") as f:
+        # XXX:
+        #  Even if toml is a text format, the file must be opened as binary file
+        with self.path.config_full_path.open("rb") as f:
             self._toml = tomllib.load(f)
             config.validate(self._toml)
 
-        logger.info(f"Outpost project '{self.name}'")
-        logger.debug(f"project top level directory: {self.topdir}")
-        logger.debug(f"project source directory: {self.sourcedir}")
-        logger.debug(f"project build directory: {self.builddir}")
-        logger.debug(f"project staging directory: {self.stagingdir}")
+        console.title(f"Outpost project '{self.name}'")
 
-        os.makedirs(self.sourcedir, exist_ok=True)
-        os.makedirs(self.builddir, exist_ok=True)
-        os.makedirs(self.stagingdir, exist_ok=True)
-        os.makedirs(self.outdir, exist_ok=True)
+        self.path.mkdirs()
+        self.path.save()
 
         self._packages = list()  # list of ABCpackage
 
@@ -79,38 +70,6 @@ class Project:
     def name(self) -> str:
         return self._toml["name"]
 
-    @property
-    def topdir(self) -> str:
-        return self._topdir
-
-    @property
-    def sourcedir(self) -> str:
-        return self._sourcedir
-
-    @property
-    def builddir(self) -> str:
-        return self._builddir
-
-    @property
-    def stagingdir(self) -> str:
-        return self._stagingdir
-
-    @property
-    def outdir(self) -> str:
-        return self._outdir
-
-    @property
-    def bindir(self) -> str:
-        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "bin")
-
-    @property
-    def libdir(self) -> str:
-        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "lib")
-
-    @property
-    def datadir(self) -> str:
-        return os.path.join(self.stagingdir, self.INSTALL_PREFIX, "share")
-
     def download(self) -> None:
         logger.info("Downloading packages")
         for p in self._packages:
@@ -123,7 +82,7 @@ class Project:
 
     def setup(self) -> None:
         logger.info(f"Generating {self.name} Ninja build File")
-        ninja = ninja_backend.NinjaGenFile(os.path.join(self.builddir, "build.ninja"))
+        ninja = ninja_backend.NinjaGenFile(os.path.join(self.path.build_dir, "build.ninja"))
 
         ninja.add_outpost_rules()
         ninja.add_outpost_internals_rules()
@@ -134,7 +93,8 @@ class Project:
             dts_include_dirs.extend(p.dts_include_dirs)
 
         ninja.add_outpost_dts(
-            (pathlib.Path(self.topdir) / self._toml["dts"]).resolve(strict=True), dts_include_dirs
+            (pathlib.Path(self.path.project_dir) / self._toml["dts"]).resolve(strict=True),
+            dts_include_dirs,
         )
 
         ninja.add_meson_rules()
@@ -149,14 +109,14 @@ class Project:
 
         # Dummy layout for dummy link
         dummy_layout = ninja.add_internal_gen_dummy_memory_layout_target(
-            output=pathlib.Path(self.builddir, "dummy_layout.json"),
+            output=pathlib.Path(self.path.private_build_dir, "dummy_layout.json"),
         )
 
         # linkerscript template file
         # XXX: hardcoded in early steps
-        linker_script_template = pathlib.Path(self._packages[1].datadir) / "linkerscript.ld.in"
+        linker_script_template = pathlib.Path(self._packages[1].data_dir) / "linkerscript.ld.in"
 
-        dummy_linker_script = pathlib.Path(self.builddir, "dummy.lds")
+        dummy_linker_script = pathlib.Path(self.path.private_build_dir, "dummy.lds")
         ninja.add_gen_ldscript_target(
             "dummy", dummy_linker_script, linker_script_template, pathlib.Path(dummy_layout[0])
         )
@@ -179,7 +139,7 @@ class Project:
                 layout_app_exelist.extend(package.dummy_linked_exelist)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
-            output=pathlib.Path(self.builddir, "layout.json"),
+            output=pathlib.Path(self.path.private_build_dir, "layout.json"),
             dependencies=self._packages,
             sys_exelist=layout_sys_exelist,
             app_exelist=layout_app_exelist,
@@ -194,7 +154,7 @@ class Project:
                 # XXX: Handle multiple exe package
                 elf_in = package.installed_exelist[0]
                 elf_out = package.relocated_exelist[0]
-                linker_script = pathlib.Path(self.builddir, f"{elf_in.stem}.lds")
+                linker_script = pathlib.Path(self.path.private_build_dir, f"{elf_in.stem}.lds")
                 metadata_out = elf_out.with_suffix(".meta")
                 hex_out = elf_out.with_suffix(".hex")
 
@@ -216,7 +176,9 @@ class Project:
                 ninja.add_objcopy_rule(elf_out, hex_out, "ihex", [], package.name)
                 app_hex_files.append(hex_out)
 
-                ninja.add_gen_metadata_rule(elf_out, metadata_out, pathlib.Path(self.topdir))
+                ninja.add_gen_metadata_rule(
+                    elf_out, metadata_out, pathlib.Path(self.path.project_dir)
+                )
                 app_metadata.append(metadata_out)
 
         # Patch kernel/objcopy
@@ -237,7 +199,7 @@ class Project:
         # ninja.add_objcopy_rule(idle_elf, idle_hex, "ihex", None, self._packages[0].name)
 
         # srec_cat
-        firmware_hex = pathlib.Path(self.builddir) / "firmware.hex"
+        firmware_hex = pathlib.Path(self.path.build_dir) / "firmware.hex"
         ninja.add_srec_cat_rule(kernel_hex, idle_hex, app_hex_files, firmware_hex)
 
         ninja.close()
@@ -315,7 +277,7 @@ def run_command() -> None:
         lvl = logging.getLevelName(args.log_level.upper())
         log_config.set_console_log_level(lvl)
 
-    project = Project(os.path.join(args.projectdir, "project.toml"))
+    project = Project(args.projectdir)
     args.func(project)
 
 

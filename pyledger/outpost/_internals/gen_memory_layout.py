@@ -17,7 +17,7 @@ import typing as T
 
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils.memory_layout import MemoryType, MemoryRegion, MemoryLayout
-from ..utils.pathhelper import ProjectPathHelper
+from ..utils.pathhelper import ProjectPath
 from ..utils import align_to
 
 
@@ -26,7 +26,6 @@ def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]
     apps: T.List[AppElf] = []
 
     for elf in exelist:
-        print(elf)
         name = elf.stem
         if name == "sentry-kernel":
             sentry = SentryElf(str(elf), None)
@@ -108,7 +107,6 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
       - :py:mod:`.plot_memory_layout`
       - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
-    print(exelist)
     sentry, apps = _get_project_elves(exelist)
 
     layout = MemoryLayout()
@@ -153,8 +151,10 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
       - :py:mod:`.plot_memory_layout`
       - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
-    project = ProjectPathHelper(projectdir, prefix)
-    return run_gen_memory_layout(output, list(project.bindir.glob("*.elf")))
+    path = ProjectPath.load(projectdir / "build")
+    return run_gen_memory_layout(
+        output, list((path.sysroot_dir / path.rel_prefix / "bin").glob("*.elf"))
+    )
 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:
