@@ -12,7 +12,7 @@ on:
 
 # to be updated when creating a repository
 env:
-  PROJECTNAME: "python-outpost"
+  PROJECTNAME: "barbican"
 
 defaults:
   run:
@@ -102,39 +102,3 @@ jobs:
         input_version=${{ matrix.python-version }}
         pyversion="py${input_version/./}"
         TOX_ENV=$pyversion tox -e unittests
-
-  publish:
-    name: publishing test report
-    runs-on: orange-classic
-    container:
-      image: docker-kulos-nexus.orange.ledgerlabs.net/pythonbot:latest
-      credentials:
-        username: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
-        password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
-    needs: [ test, getversion ]
-
-    steps:
-    - name: Set pypi credentials
-      uses: embedded-devops/action-pypi@main
-      with:
-        pypi_server_url: 'https://nexus.orange.ledgerlabs.net/repository/kulos-pypi'
-        pypi_server_need_authentication: true
-        pypi_server_login: ${{ secrets.KULOS_NEXUS_CI_RO_USER }}
-        pypi_server_password: ${{ secrets.KULOS_NEXUS_CI_RO_PASSWORD }}
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Run Tox html coverage
-      run: |
-        tox -e htmlcov
-    - name: publish report
-      run: |
-         REPO_URL=https://nexus.orange.ledgerlabs.net
-         DOC_REPOSITORY=repository/kulos-documentation/tests-suite/${{ env.PROJECTNAME }}
-         HTML_BUILD_DIR=reports/testcov
-
-         ARTIFACT_ARCHIVE_URL=${REPO_URL}/${DOC_REPOSITORY}/${{ needs.getversion.outputs.version }}/html/
-         cd ${HTML_BUILD_DIR}
-         for file in $(find . -type f); do
-           curl --insecure -u "${{ secrets.KULOS_NEXUS_CI_RW_USER }}:${{ secrets.KULOS_NEXUS_CI_RW_PASSWORD }}" --upload-file ${file} "${ARTIFACT_ARCHIVE_URL}/${file}"
-         done

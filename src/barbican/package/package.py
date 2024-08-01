@@ -12,7 +12,7 @@ from ..utils import working_directory_attr
 import typing as T
 
 if T.TYPE_CHECKING:
-    from pyledger.outpost.outpost import Project
+    from ..barbican import Project
 
 
 class Package:

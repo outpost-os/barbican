@@ -4,7 +4,7 @@
 
 """ Memory layout internal command
 
-This internal command forge firmware memory layout for outpost applications.
+This internal command forge firmware memory layout for barbican applications.
 
 
 
@@ -82,7 +82,7 @@ def _add_app_regions(
 def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
     """Memory layout internal command
 
-    This command does the outpost application memory placement in the dedicated memory pool.
+    This command does the barbican application memory placement in the dedicated memory pool.
     According to target architecture, each application is placed in memory in order to fit
     MPU region alignment and size.
     All applications must fit in target device RAM and Flash.
@@ -124,7 +124,7 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
 def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
     """Memory layout internal command
 
-    This command does the outpost application memory placement in the dedicated memory pool.
+    This command does the barbican application memory placement in the dedicated memory pool.
     According to target architecture, each application is placed in memory in order to fit
     MPU region alignment and size.
     All applications must fit in target device RAM and Flash.

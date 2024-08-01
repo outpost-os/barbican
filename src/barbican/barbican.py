@@ -38,7 +38,7 @@ class Project:
             self._toml = tomllib.load(f)
             config.validate(self._toml)
 
-        console.title(f"Outpost project '{self.name}'")
+        console.title(f"Barbican project '{self.name}'")
 
         self.path.mkdirs()
         self.path.save()
@@ -84,15 +84,15 @@ class Project:
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.path.build_dir, "build.ninja"))
 
-        ninja.add_outpost_rules()
-        ninja.add_outpost_internals_rules()
-        ninja.add_outpost_targets(self)
-        ninja.add_outpost_cross_file(pathlib.Path(self._toml["crossfile"]))
+        ninja.add_barbican_rules()
+        ninja.add_barbican_internals_rules()
+        ninja.add_barbican_targets(self)
+        ninja.add_barbican_cross_file(pathlib.Path(self._toml["crossfile"]))
         dts_include_dirs = []
         for p in self._packages:
             dts_include_dirs.extend(p.dts_include_dirs)
 
-        ninja.add_outpost_dts(
+        ninja.add_barbican_dts(
             (pathlib.Path(self.path.project_dir) / self._toml["dts"]).resolve(strict=True),
             dts_include_dirs,
         )
@@ -240,7 +240,7 @@ def common_argument_parser() -> ArgumentParser:
 
 def main_argument_parser() -> ArgumentParser:
     """Argument parser for main entrypoint"""
-    parser = ArgumentParser(prog="outpost", add_help=True)
+    parser = ArgumentParser(prog="barbican", add_help=True)
     common_parser = common_argument_parser()
 
     cmd_subparsers = parser.add_subparsers(
@@ -267,7 +267,7 @@ def main_argument_parser() -> ArgumentParser:
 
 
 def run_command() -> None:
-    """Run an outpost command"""
+    """Run an barbican command"""
     args = main_argument_parser().parse_args()
     if args.verbose:
         log_config.set_console_log_level(logging.DEBUG)
@@ -282,7 +282,7 @@ def run_command() -> None:
 
 
 def run_internal_command(cmd: str, argv: T.List[str]) -> None:
-    """run an internal outpost command
+    """run an internal barbican command
 
     :param cmd: internal command name
     :type cmd: str
@@ -294,22 +294,22 @@ def run_internal_command(cmd: str, argv: T.List[str]) -> None:
     """
     import importlib
 
-    module = importlib.import_module("pyledger.outpost._internals." + cmd)
+    module = importlib.import_module("barbican._internals." + cmd)
     module.run(argv)
 
 
 def main() -> None:
-    """Outpost script entrypoint
+    """barbican script entrypoint
 
-    Execute an outpost command or an internal command.
-    Outpost commands are user entrypoint, dedicated help can be printed in terminal.
-    Outpost internal commands are used by build system backend for internal build steps,
+    Execute an barbican command or an internal command.
+    barbican commands are user entrypoint, dedicated help can be printed in terminal.
+    barbican internal commands are used by build system backend for internal build steps,
     those are not available through user help.
 
     command usage:
-     `outpost <cmd> [option(s)]`
+     `barbican <cmd> [option(s)]`
     internal command usage:
-     `outpost --internal <internal_cmd> [option(s)]`
+     `barbican --internal <internal_cmd> [option(s)]`
     """
     try:
         if len(sys.argv) >= 2 and sys.argv[1] == "--internal":
