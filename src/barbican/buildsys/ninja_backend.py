@@ -22,7 +22,7 @@ class NinjaGenFile:
         self._ninja.comment("Auto generated file **DO NOT EDIT**")
 
     def close(self) -> None:
-        """Close, and thus write to disk, ninja build file"""
+        """Close, and thus write to disk, ninja build file."""
         self._raw_file.close()
 
     def add_barbican_rules(self) -> None:

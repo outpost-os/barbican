@@ -22,41 +22,44 @@ class MemoryType(Enum):
 
 
 class MemoryRegion(UserDict):
-    """Memory region user defined dictionary
+    """Memory region user defined dictionary.
 
     MemoryRegion is a python UserDict with a fixed set of possible keys
      - name: memory region name
      - start_addr: memory region start address
      - size: memory region size
      - subregion: subset of inner region, optional
+
+     ..todo:: Convert to dataclass
+
+    Parameters
+    ----------
+    name: str
+        memory region name
+    type: MemoryType
+        Type of memory region (i.e. text or ram)
+    start_addr: int
+        memory region start address
+    size: int
+        memory region size in bytes
     """
 
     def __init__(self, name: str, type: MemoryType, start_addr: int, size: int) -> None:
-        """Initialiazer
-
-        Parameters are defined at initialization time and are non mutable
-
-        Parameters
-        ----------
-        name
-            memory region name
-        type
-            Type of memory region (i.e. text or ram)
-        start_addr
-            memory region start address
-        size
-            memory region size in bytes
-        """
         super(MemoryRegion, self).__init__()
         self.data["name"] = name
         self.data["type"] = type
         self.data["start_addr"] = start_addr
         self.data["size"] = size
 
-    def __setitem__(self, key, val):
-        """override :py:func:`__setitem__`
+    def __setitem__(self, key: T.Any, val: T.Any) -> None:
+        """Override :py:func:`__setitem__`.
 
         Direct call to setitem is forbidden for MemoryRegion
+
+        Parameters
+        ----------
+        key: T.Any
+        val: T.Any
 
         Raises
         ------
@@ -65,11 +68,11 @@ class MemoryRegion(UserDict):
         raise Exception("MemoryRegion set item is forbidden")
 
     def append_subregions(self, subregion: "MemoryRegion") -> None:
-        """Append a subregion to the given region
+        """Append a subregion to the given region.
 
         Parameters
         ----------
-        subregion
+        subregion: MemoryRegion
             Memory region to append
         """
         if "subregion" not in self.data.keys():
@@ -78,17 +81,23 @@ class MemoryRegion(UserDict):
 
 
 class _JSONEncoder(json.JSONEncoder):
-    """Custom json encoder for :py:class:`MemoryRegion` and :py:class:`MemoryLayout`
+    """Custom json encoder for :py:class:`MemoryRegion` and :py:class:`MemoryLayout`.
+
     Derived from :py:class:`json.JSONEncoder`
     """
 
     def default(self, obj: T.Any) -> T.Any:
-        """override :py:meth:`json.JSONEncoder.default`
+        """Override :py:meth:`json.JSONEncoder.default`.
 
         Parameters
         ----------
-        obj
+        obj: T.Any
             python object to serialize in json
+
+        Returns
+        -------
+        T.Any
+            Json encoded value
 
         Notes
         -----
@@ -104,7 +113,7 @@ class _JSONEncoder(json.JSONEncoder):
 
 
 class MemoryLayout(UserList):
-    """Memory Layout
+    """Memory Layout.
 
     Memory layout is a user defined list that can only accepts :py:class:`MemoryRegion` items.
     """
@@ -116,11 +125,11 @@ class MemoryLayout(UserList):
             raise TypeError("Item must be a MemoryRegion.")
 
     def append(self, item: MemoryRegion) -> None:
-        """override :py:meth:`list.append`
+        """Override :py:meth:`list.append`.
 
         Parameters
         ----------
-        item
+        item: MemoryRegion
             :py:class:`MemoryRegion` to append to the list
 
         Raises
@@ -133,11 +142,11 @@ class MemoryLayout(UserList):
             raise TypeError("Item must be a MemoryRegion.")
 
     def save_as_json(self, file: PathLike) -> None:
-        """Save MemoryLayout as json file
+        """Save MemoryLayout as json file.
 
         Parameters
         ----------
-        file
+        file: PathLike
             Path to json file to write
         """
         with open(file, "w") as f:

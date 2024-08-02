@@ -12,7 +12,7 @@ from ..utils.environment import find_program
 
 
 def _escape_path(path: str) -> str:
-    """Escape ninja build syntax separators and tokens"""
+    """Escape ninja build syntax separators and tokens."""
     # Escape $ first, then other, please keep this order.
     return path.replace("$", "$$").replace(" ", "$ ").replace(":", "$:")
 
@@ -20,7 +20,7 @@ def _escape_path(path: str) -> str:
 def _add_build_target_dyndep(
     target: str, implicit_inputs: set[str], implicit_output: set[str], out: T.Any
 ) -> None:
-    """Add dynamically generated implicit ins/outs for a given target
+    """Add dynamically generated implicit ins/outs for a given target.
 
     ..notes: The target must exists in the top level build.ninja file
 
@@ -46,7 +46,7 @@ def _add_build_target_dyndep(
 def _gen_ninja_dyndep_file(
     package: str, introspect: T.Any, stagingdir: Path, output: T.Any
 ) -> None:
-    """Generate dyndep file
+    """Generate dyndep file.
 
     For compile target, build system files and sources file are needed as implicit inputs.
     Files to be installed are implicit output (resp. inputs) of compile (resp. install) command.
@@ -54,7 +54,6 @@ def _gen_ninja_dyndep_file(
     ..warning: some internal target are inputs for another target, thus remove those from implicit
     inputs.
     """
-
     compile_target = f"{package}_compile.stamp"
     install_target = f"{package}_install.stamp"
 
@@ -132,7 +131,7 @@ def run_meson_package_dyndep(
 
 
 def run(argv: T.List[str]) -> None:
-    """Execute meson package dyndep internal command"""
+    """Execute meson package dyndep internal command."""
     parser = ArgumentParser()
     parser.add_argument("--name", type=str, action="store", help="package name")
     parser.add_argument(

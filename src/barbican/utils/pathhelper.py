@@ -33,7 +33,7 @@ class DirName(StrEnum):
 
 
 def default_prefix() -> Path:
-    """Return default prefix according to build platform.
+    r"""Return default prefix according to build platform.
 
     Returns
     -------
@@ -99,7 +99,7 @@ class ProjectPath:
 
     @classmethod
     def load(cls, build_dir: Path) -> "ProjectPath":
-        """Load project path for a given builddir from json"""
+        """Load project path for a given builddir from json."""
         try:
             file = (build_dir / DirName.Outpost_Private.value / cls.filename).resolve(strict=True)
         except FileNotFoundError:

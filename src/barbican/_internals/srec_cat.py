@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-""" srec_cat internal command
+"""srec_cat internal command.
+
 TODO : documentation
 """
 
@@ -32,7 +33,7 @@ def run_srec_cat(inputs: T.List[Path], output: Path, format: str) -> None:
 
 
 def run(argv: T.List[str]) -> None:
-    """Execute gen_ldscript internal command"""
+    """Execute gen_ldscript internal command."""
     parser = ArgumentParser()
     parser.add_argument(
         "--format",

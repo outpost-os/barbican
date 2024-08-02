@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-""" Generate LD script internal command
+"""Generate LD script internal command.
+
 TODO : documentation
 """
 
@@ -15,7 +16,7 @@ import json
 
 
 def run_gen_ldscript(name: str, template: Path, layout: Path, output: Path) -> None:
-    """LD script generator internal command
+    """LD script generator internal command.
 
     This command generate a linker script for an barbican application based on the
     linker script template provides by libshield (TODO sphinx cross ref) (in noPIC build mode)
@@ -24,13 +25,13 @@ def run_gen_ldscript(name: str, template: Path, layout: Path, output: Path) -> N
 
     Parameters
     ----------
-    name
+    name: str
         application name
-    template
+    template: Path
         linker script Jinja2 template
-    layout
+    layout: Path
         barbican memory layout in json
-    output
+    output: Path
         generated linker script for a given application
     """
     with open(layout, "r", encoding="utf-8") as layout_file:
@@ -44,7 +45,7 @@ def run_gen_ldscript(name: str, template: Path, layout: Path, output: Path) -> N
 
 
 def run(argv: T.List[str]) -> None:
-    """Execute gen_ldscript internal command"""
+    """Execute gen_ldscript internal command."""
     parser = ArgumentParser()
     parser.add_argument("--name", type=str, action="store", help="application name")
     parser.add_argument("template", type=Path, help="ld script template")

@@ -218,7 +218,7 @@ def setup(project: Project) -> None:
 
 
 def common_argument_parser() -> ArgumentParser:
-    """Argument parser for logging infrastrucutre"""
+    """Argument parser for logging infrastrucutre."""
     common_parser = ArgumentParser(add_help=False)
     loglevel_parser = common_parser.add_argument_group("logging")
     loglevel_parser.add_argument("-q", "--quiet", action="store_true")
@@ -239,7 +239,7 @@ def common_argument_parser() -> ArgumentParser:
 
 
 def main_argument_parser() -> ArgumentParser:
-    """Argument parser for main entrypoint"""
+    """Argument parser for main entrypoint."""
     parser = ArgumentParser(prog="barbican", add_help=True)
     common_parser = common_argument_parser()
 
@@ -267,7 +267,7 @@ def main_argument_parser() -> ArgumentParser:
 
 
 def run_command() -> None:
-    """Run an barbican command"""
+    """Run an barbican command."""
     args = main_argument_parser().parse_args()
     if args.verbose:
         log_config.set_console_log_level(logging.DEBUG)
@@ -282,7 +282,7 @@ def run_command() -> None:
 
 
 def run_internal_command(cmd: str, argv: T.List[str]) -> None:
-    """run an internal barbican command
+    """Run an internal barbican command.
 
     :param cmd: internal command name
     :type cmd: str
@@ -299,7 +299,7 @@ def run_internal_command(cmd: str, argv: T.List[str]) -> None:
 
 
 def main() -> None:
-    """barbican script entrypoint
+    """Barbican script entrypoint.
 
     Execute an barbican command or an internal command.
     barbican commands are user entrypoint, dedicated help can be printed in terminal.

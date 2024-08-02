@@ -2,12 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-""" Memory layout internal command
+"""Memory layout internal command.
 
 This internal command forge firmware memory layout for barbican applications.
-
-
-
 """
 
 from argparse import ArgumentParser
@@ -80,7 +77,7 @@ def _add_app_regions(
 
 
 def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
-    """Memory layout internal command
+    """Memory layout internal command.
 
     This command does the barbican application memory placement in the dedicated memory pool.
     According to target architecture, each application is placed in memory in order to fit
@@ -90,9 +87,9 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
 
     Parameters
     ----------
-    output
+    output: Path
         output (in json) file path
-    exelist
+    exelist: list[Path]
         list of executable path to consider
 
     Notes
@@ -122,7 +119,7 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
 
 
 def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
-    """Memory layout internal command
+    """Memory layout internal command.
 
     This command does the barbican application memory placement in the dedicated memory pool.
     According to target architecture, each application is placed in memory in order to fit
@@ -132,11 +129,11 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
 
     Parameters
     ----------
-    output
+    output: Path
         output (in json) file path
-    projectdir
+    projectdir: Path
         Project top level directory
-    prefix
+    prefix: Path
         Install staging prefix
 
     Notes
@@ -165,7 +162,7 @@ def run_gen_dummy_memory_layout(output: Path) -> None:
 
 
 def run(argv: T.List[str]) -> None:
-    """Execute memory_layout internal command"""
+    """Execute memory_layout internal command."""
     parser = ArgumentParser()
     parser.add_argument("output", help="output filename")
     parser.add_argument(
