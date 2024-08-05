@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version = 1
+SPDX-PackageName = "barbican"
+SPDX-PackageSupplier = "Ledger SAS <firmware@ledger.fr>"
+SPDX-PackageDownloadLocation = "https://github.com/outpost-os/python-barbican"
+
+[[annotations]]
+path = "doc/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 Ledger SAS"
+SPDX-License-Identifier = "Apache-2.0"
