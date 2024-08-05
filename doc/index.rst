@@ -9,6 +9,7 @@ Welcome to barbican documentation!
    :maxdepth: 3
    :caption: Contents:
 
+   commands/barbican.rst
    python_api.rst
    license.rst
 

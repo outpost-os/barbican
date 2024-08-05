@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "autoapi.extension",
+    'sphinxarg.ext',
 ]
 
 # Napoleon extension configuration
