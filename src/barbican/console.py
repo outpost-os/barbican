@@ -13,9 +13,7 @@ import rich.text
 
 
 class Console:
-    """
-    Rich console wrapper
-    """
+    """Rich console wrapper."""
 
     def __init__(self) -> None:
         self._theme = rich.theme.Theme(

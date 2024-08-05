@@ -28,7 +28,7 @@ def run_kernel_fixup(kern_input: Path, kern_output: Path, metadata: list[Path]) 
 
 
 def run(argv: T.List[str]) -> None:
-    """Execute gen_ldscript internal command"""
+    """Execute kernel_fixup internal command."""
     parser = ArgumentParser()
 
     parser.add_argument("kern_output", type=Path, help="fixed up kernel elf file")

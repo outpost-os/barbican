@@ -106,24 +106,30 @@ class SentryElf(Elf):
 
 
 class AppElf(Elf):
+    """Outpost application Elf representation.
+
+    Attributes
+    ----------
+    FLASH_SECTIONS: list[str]
+    RAM_SECTIONS: list[str]
+
+    Parameters
+    ----------
+    elf: str
+        Input elf file to parse
+    out: str | None
+        Path to written elf file while write method is called
+
+    Raises
+    ------
+    ValueError if the package metadata 'type' is not 'outpost application'
+    """
+
     # Section to relocate
-    FLASH_SECTIONS = [".text", ".ARM"]
-    RAM_SECTIONS = [".svcexchange", ".got", ".data", ".bss"]
+    FLASH_SECTIONS: list[str] = [".text", ".ARM"]
+    RAM_SECTIONS: list[str] = [".svcexchange", ".got", ".data", ".bss"]
 
-    def __init__(self, elf: str, out: typing.Optional[str]) -> None:
-        """Initialize an Outpost application Elf representation
-
-        Parameters
-        ----------
-        elf : str
-            Input elf file to parse
-        out : str
-            Path to written elf file while write method is called
-
-        Exceptions
-        ----------
-        ValueError if the package metadata 'type' is not 'outpost application'
-        """
+    def __init__(self, elf: str, out: str | None) -> None:
         super().__init__(elf, out)
         if not self.is_an_outpost_application:
             raise ValueError
@@ -180,8 +186,7 @@ class AppElf(Elf):
             data_section.segments[0].physical_address = self.get_symbol_address("_sigot")
 
         def _symtab_fixup():
-            """Fixup symtab with relocated addresses"""
-
+            """Fixup symtab with relocated addresses."""
             s_rom = self._prev_sections[".text"][0]
             e_rom = self._elf.get_symbol("_erom").value
             rom_offset = self._elf.get_section(".text").virtual_address - s_rom
@@ -203,7 +208,7 @@ class AppElf(Elf):
                     sym.value = new_value
 
         def _got_fixup():
-            """GoT fixup with relocated addresses"""
+            """Got fixup with relocated addresses."""
             s_ram = self._prev_sections[".svcexchange"][0]
             e_ram = self._elf.get_symbol("_eheap").value
             ram_offset = self._elf.get_section(".svcexchange").virtual_address - s_ram

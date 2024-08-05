@@ -25,13 +25,14 @@ except ImportError:
 
 
 class _WorkingDir:
-    """Helper class for the following decorators"""
+    """Helper class for the following decorators.
+
+    Parameters
+    ----------
+    working_dir: str
+    """
 
     def __init__(self, working_dir: str) -> None:
-        """
-        Save the current working directory in order to be idempotent if leave
-        is called before enter.
-        """
         self._prev = os.getcwd()
         self._next = working_dir
 
@@ -46,8 +47,9 @@ class _WorkingDir:
 
 
 def working_directory(path):
-    """Decorator that enter a new dir and leave after function call
-    the directory is a decorator argument
+    """Change working dir for the decorated function.
+
+    Enter a new dir and leave after function call the directory is a decorator argument.
     """
 
     def _working_directory(func):
@@ -68,8 +70,9 @@ def working_directory(path):
 
 
 def working_directory_attr(attr):
-    """Decorator that enter a new dir and leave after function call
-    the directory is a property (attr) of an object.
+    """Change working dir for the decorated function.
+
+    Enter a new dir and leave after function call the directory is a property (attr) of an object.
     """
 
     def _working_directory(func):
@@ -90,12 +93,12 @@ def working_directory_attr(attr):
 
 
 def pow2_round_up(x: int) -> int:
-    """Round number to the next power of 2 boundary"""
+    """Round number to the next power of 2 boundary."""
     return 1 if x == 0 else 2 ** math.ceil(math.log2(x))
 
 
 def pow2_greatest_divisor(x: int) -> int:
-    """Return the highest power of 2 than can divide x"""
+    """Return the highest power of 2 than can divide x."""
     return math.gcd(x, pow2_round_up(x))
 
 
