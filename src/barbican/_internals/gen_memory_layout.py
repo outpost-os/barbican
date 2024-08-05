@@ -102,7 +102,7 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
     .. note:: generated memory layout json file is used as input the following internals:
       - :py:mod:`.relocate_elf` (PIC and/or prebuilt app)
       - :py:mod:`.plot_memory_layout`
-      - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
+      - :py:mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
     sentry, apps = _get_project_elves(exelist)
 
@@ -146,7 +146,7 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
     .. note:: generated memory layout json file is used as input the following internals:
       - :py:mod:`.relocate_elf` (PIC and/or prebuilt app)
       - :py:mod:`.plot_memory_layout`
-      - :py_mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
+      - :py:mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
     path = ProjectPath.load(projectdir / "build")
     return run_gen_memory_layout(
