@@ -10,6 +10,7 @@ Welcome to barbican documentation!
    :caption: Contents:
 
    python_api.rst
+   license.rst
 
 .. toctree::
    :hidden:
