@@ -47,10 +47,7 @@ todo_include_todos = True
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-
-# Any idea for non outpost specific python package ?
-# html_logo = '_static/figures/sentry_kernel.png'
-
+html_logo = '_static/figures/barbican.png'
 html_static_path = ["_static"]
 
 # If true, SmartyPants will be used to convert quotes and dashes to
@@ -76,5 +73,5 @@ simplepdf_vars = {
     # "cover-bg": "url(figures/outpost_fp.png) no-repeat center",
     "cover-overlay": "rgba(62, 99, 196, 0.5)",
     "top-left-content": "counter(page)",
-    # "bottom-center-content": "Outpost documentation suite: Sentry kernel concepts",
+    "bottom-center-content": "Outpost documentation suite: Barbican meta tool",
 }
