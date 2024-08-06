@@ -10,6 +10,7 @@ Welcome to barbican documentation!
    :caption: Contents:
 
    commands/barbican.rst
+   commands/internals.rst
    python_api.rst
    license.rst
 

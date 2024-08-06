@@ -25,7 +25,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "autoapi.extension",
-    'sphinxarg.ext',
+    "sphinxarg.ext",
 ]
 
 # Napoleon extension configuration
@@ -48,7 +48,7 @@ todo_include_todos = True
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-html_logo = '_static/figures/barbican.png'
+html_logo = "_static/figures/barbican.png"
 html_static_path = ["_static"]
 
 # If true, SmartyPants will be used to convert quotes and dashes to
