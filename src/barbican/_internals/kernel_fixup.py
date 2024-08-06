@@ -27,13 +27,16 @@ def run_kernel_fixup(kern_input: Path, kern_output: Path, metadata: list[Path]) 
     kernel.save()
 
 
-def run(argv: T.List[str]) -> None:
-    """Execute kernel_fixup internal command."""
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
-
     parser.add_argument("kern_output", type=Path, help="fixed up kernel elf file")
     parser.add_argument("kern_input", type=Path, help="kernel elf file")
     parser.add_argument("metadata", type=Path, nargs="+", help="metadata bin files")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    """Execute kernel_fixup internal command."""
+    args = argument_parser().parse_args(argv)
     run_kernel_fixup(args.kern_input, args.kern_output, args.metadata)

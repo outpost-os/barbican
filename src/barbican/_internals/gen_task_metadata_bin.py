@@ -83,7 +83,7 @@ def run_gen_task_metadata_bin(input: Path, output: Path, path: ProjectPath) -> N
     _gen_metadata(output, {"task_meta": task_metadata}, path)
 
 
-def run(argv: T.List[str]) -> None:
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("output", type=Path, help="output elf file")
     parser.add_argument("input", type=Path, help="partially linked input elf")
@@ -98,6 +98,11 @@ def run(argv: T.List[str]) -> None:
     parser.add_argument(
         "--prefix", type=str, default=os.path.join("usr", "local"), help="install staging prefix"
     )
-    args = parser.parse_args(argv)
+
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    args = argument_parser().parse_args(argv)
     # XXX: use builddir as option
     run_gen_task_metadata_bin(args.input, args.output, ProjectPath.load(args.projectdir / "build"))

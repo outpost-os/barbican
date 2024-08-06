@@ -44,13 +44,17 @@ def run_gen_ldscript(name: str, template: Path, layout: Path, output: Path) -> N
                 linkerscript.write(linkerscript_template.render(name=name, layout=memory_layout))
 
 
-def run(argv: T.List[str]) -> None:
-    """Execute gen_ldscript internal command."""
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("--name", type=str, action="store", help="application name")
     parser.add_argument("template", type=Path, help="ld script template")
     parser.add_argument("layout", type=Path, help="memory layout (in json format)")
     parser.add_argument("output", type=Path, help="output filename")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    """Execute gen_ldscript internal command."""
+    args = argument_parser().parse_args(argv)
     run_gen_ldscript(args.name, args.template, args.layout, args.output)

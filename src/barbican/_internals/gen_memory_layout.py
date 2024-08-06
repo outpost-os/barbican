@@ -161,8 +161,7 @@ def run_gen_dummy_memory_layout(output: Path) -> None:
     layout.save_as_json(output)
 
 
-def run(argv: T.List[str]) -> None:
-    """Execute memory_layout internal command."""
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("output", help="output filename")
     parser.add_argument(
@@ -190,7 +189,13 @@ def run(argv: T.List[str]) -> None:
         help="List of executable to use for the firmware layout,"
         "if empty, glob *.elf in staging dir",
     )
-    args = parser.parse_args(argv)
+
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    """Execute memory_layout internal command."""
+    args = argument_parser().parse_args(argv)
 
     if args.dummy:
         run_gen_dummy_memory_layout(args.output)

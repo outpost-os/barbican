@@ -32,8 +32,7 @@ def run_srec_cat(inputs: T.List[Path], output: Path, format: str) -> None:
     subprocess.run(cmdline, check=True)
 
 
-def run(argv: T.List[str]) -> None:
-    """Execute gen_ldscript internal command."""
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument(
         "--format",
@@ -45,5 +44,10 @@ def run(argv: T.List[str]) -> None:
     parser.add_argument("output", type=Path, help="concatenate resulting file")
     parser.add_argument("inputs", type=Path, nargs="+", help="input file(s) to concatenate")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    """Execute srec_cat internal command."""
+    args = argument_parser().parse_args(argv)
     run_srec_cat(args.inputs, args.output, _SREC_CAT_FORMAT[args.format])
