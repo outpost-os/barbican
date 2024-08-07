@@ -12,6 +12,8 @@ Welcome to barbican documentation!
    gettingstarted.rst
    commands/barbican.rst
    commands/internals.rst
+   reference_manual/index.rst
+
 
 .. toctree::
    :hidden:
