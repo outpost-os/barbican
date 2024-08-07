@@ -1,4 +1,4 @@
-Barbican internal commands
+Internal commands
 ==========================
 
 .. toctree::

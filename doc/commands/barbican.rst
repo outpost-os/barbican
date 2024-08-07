@@ -1,4 +1,4 @@
-Barbican command line tool
+Command line tool
 ==========================
 
 .. argparse::
