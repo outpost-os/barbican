@@ -9,6 +9,7 @@ Welcome to barbican documentation!
    :maxdepth: 3
    :caption: Contents:
 
+   gettingstarted.rst
    commands/barbican.rst
    commands/internals.rst
    python_api.rst
