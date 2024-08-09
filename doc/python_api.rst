@@ -1,4 +1,4 @@
-barbican Python API
+Barbican Python API
 ===================
 
 .. toctree::

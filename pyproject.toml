@@ -73,9 +73,11 @@ doc = [
     "sphinx-rtd-theme>=2.0.0",
     "sphinx-simplepdf>=1.6.0",
     "sphinx-autoapi",
+    "sphinx-argparse",
 ]
-license = [
-    "reuse>=4.0.0",
+tools = [
+    "dts-utils",
+    "svd2json",
 ]
 
 [tool.setuptools_scm]

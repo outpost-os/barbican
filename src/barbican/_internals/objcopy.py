@@ -29,7 +29,7 @@ def run_objcopy(objcopy: str, input: Path, output: Path, bfdname: str) -> None:
     subprocess.run(cmdline, check=True)
 
 
-def run(argv: T.List[str]) -> None:
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("output", type=Path, help="output file")
     parser.add_argument("input", type=Path, help="input elf file")
@@ -43,7 +43,12 @@ def run(argv: T.List[str]) -> None:
         required=False,
         help="Meson introspect json (for Meson package only)",
     )
-    args = parser.parse_args(argv)
+
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    args = argument_parser().parse_args(argv)
 
     objcopy = None
     if args.mesonintrospect:

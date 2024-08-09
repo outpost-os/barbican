@@ -39,7 +39,7 @@ def run_relink_elf(
     subprocess.run(linker_cmdline, check=True)
 
 
-def run(argv: T.List[str]) -> None:
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("output", type=Path, help="output elf file")
     parser.add_argument("input", type=Path, help="partially linked input elf")
@@ -53,8 +53,12 @@ def run(argv: T.List[str]) -> None:
         required=False,
         help="Meson introspect json (for Meson package only)",
     )
-    args = parser.parse_args(argv)
 
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    args = argument_parser().parse_args(argv)
     linker_cmdline = None
     if args.mesonintrospect:
         linker_cmdline = _meson_package_get_linker(args.mesonintrospect)

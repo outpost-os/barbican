@@ -130,8 +130,7 @@ def run_meson_package_dyndep(
         out.write(json.dumps(package_introspection, indent=4))
 
 
-def run(argv: T.List[str]) -> None:
-    """Execute meson package dyndep internal command."""
+def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("--name", type=str, action="store", help="package name")
     parser.add_argument(
@@ -145,5 +144,10 @@ def run(argv: T.List[str]) -> None:
     parser.add_argument("stagingdir", type=Path, help="package stagingdir")
     parser.add_argument("dyndep", type=Path, help="dynamic dependencies file")
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def run(argv: T.List[str]) -> None:
+    """Execute meson package dyndep internal command."""
+    args = argument_parser().parse_args(argv)
     run_meson_package_dyndep(args.name, args.builddir, args.stagingdir, args.dyndep, args.json)
