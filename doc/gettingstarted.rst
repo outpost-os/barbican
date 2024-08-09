@@ -8,7 +8,7 @@ from github project release page (Add ref) or from git.
 Installing Barbican with pip
 ----------------------------
 
-Barbican can be install with pip, it is recommended to install package for user (or in
+Barbican can be installed with pip, it is recommended to install package for user (or in
 virtualenv).
 
 .. code-block:: console
@@ -41,7 +41,7 @@ The build backend used is `setuptools` with dynamic versioning.
      * setuptools
      * setuptools_scm
 
-Barbican dependencies
+Runtime dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
 Barbican depends on some packages at runtime for git operation, elf analysis and
@@ -123,7 +123,7 @@ Development
 Barbican follows `PEP8 <https://peps.python.org/pep-0008/>`_ coding style, with
 100 characters line length. `blake <https://black.readthedocs.io/en/stable/>`_
 and `flake8 <https://flake8.pycqa.org/en/latest/>`_ are used for code linting
-and type checking is done with `mypy <https://mypy-lang.org/>`_ with Python3.10
+and type checking is done with `mypy <https://mypy-lang.org/>`_ with Python 3.10
 type annotation syntax.
 
 Barbican use `tox <https://tox.wiki/en/4.17.0/>`_ as test frontend. Lint, unit
