@@ -2,152 +2,91 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from collections import UserList, UserDict
+from dataclasses import dataclass, fields, field, asdict
+from enum import unique, auto, IntFlag
+
 from enum import Enum
 import json
-from os import PathLike
+from pathlib import Path
 import typing as T
 
-
-# XXX: add json schema validation here
-# a MemoryLayout is an array of memoryRegion
-# Memory region is a dict w/ name, saddr, size,(TODO: [perm,] )
-# a MemoryRegion may have a, array of subregion for plotting (svc, heap, stack , etc.)
-# TODO: Add JsonDecoder
+from . import StrEnum
 
 
-class MemoryType(Enum):
-    TEXT = "text"
-    RAM = "ram"
+@dataclass(kw_only=True, frozen=True)
+class Region:
+    @unique
+    class Type(StrEnum):
+        Text = auto()
+        Ram = auto()
 
+    @unique
+    class Permission(IntFlag):
+        Read = auto()
+        Write = auto()
+        Exec = auto()
 
-class MemoryRegion(UserDict):
-    """Memory region user defined dictionary.
-
-    MemoryRegion is a python UserDict with a fixed set of possible keys
-     - name: memory region name
-     - start_addr: memory region start address
-     - size: memory region size
-     - subregion: subset of inner region, optional
-
-     ..todo:: Convert to dataclass
-
-    Parameters
-    ----------
     name: str
-        memory region name
-    type: MemoryType
-        Type of memory region (i.e. text or ram)
-    start_addr: int
-        memory region start address
+    type: Type
+    permission: Permission = Permission(0)
+    start_address: int
     size: int
-        memory region size in bytes
-    """
+    subregions: T.List["Region"] = field(default_factory=list)
 
-    def __init__(self, name: str, type: MemoryType, start_addr: int, size: int) -> None:
-        super(MemoryRegion, self).__init__()
-        self.data["name"] = name
-        self.data["type"] = type
-        self.data["start_addr"] = start_addr
-        self.data["size"] = size
+    def __post_init__(self) -> None:
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if f.type is int and isinstance(value, str):
+                object.__setattr__(self, f.name, int(value, 16))
+            elif f.type is T.List["Region"] and all(isinstance(e, dict) for e in value):
+                object.__setattr__(self, f.name, [Region(**e) for e in value])
+            elif issubclass(f.type, Enum):
+                object.__setattr__(self, f.name, f.type(value))
 
-    def __setitem__(self, key: T.Any, val: T.Any) -> None:
-        """Override :py:func:`__setitem__`.
+    @staticmethod
+    def dict_factory(x):
+        d = dict()
+        for k, v in x:
+            if isinstance(v, Enum):
+                v = v.value
+            elif isinstance(v, int):
+                v = hex(v)
 
-        Direct call to setitem is forbidden for MemoryRegion
+            d[k] = v
 
-        Parameters
-        ----------
-        key: T.Any
-        val: T.Any
+        return d
 
-        Raises
-        ------
-        Exception
-        """
-        raise Exception("MemoryRegion set item is forbidden")
+    @classmethod
+    def from_dict(cls, keyvals: dict) -> "Region":
+        return cls(**keyvals)
 
-    def append_subregions(self, subregion: "MemoryRegion") -> None:
-        """Append a subregion to the given region.
+    def save(self, filepath: Path) -> None:
+        data = asdict(self, dict_factory=self.dict_factory)
+        with filepath.open("w") as f:
+            json.dump(data, f, indent=4)
 
-        Parameters
-        ----------
-        subregion: MemoryRegion
-            Memory region to append
-        """
-        if "subregion" not in self.data.keys():
-            self.data["subregion"] = []
-        self.data[subregion].append(subregion)
-
-
-class _JSONEncoder(json.JSONEncoder):
-    """Custom json encoder for :py:class:`MemoryRegion` and :py:class:`MemoryLayout`.
-
-    Derived from :py:class:`json.JSONEncoder`
-    """
-
-    def default(self, obj: T.Any) -> T.Any:
-        """Override :py:meth:`json.JSONEncoder.default`.
-
-        Parameters
-        ----------
-        obj: T.Any
-            python object to serialize in json
-
-        Returns
-        -------
-        T.Any
-            Json encoded value
-
-        Notes
-        -----
-        As :py:class:`MemoryRegion`(resp. :py:class:`MemoryLayout`) derived from standard built-in
-        type :py:class:`dict` (resp. :py:class:`list`), one only need to forward the internal data
-        representation.
-        """
-        if isinstance(obj, (MemoryLayout, MemoryRegion)):
-            return obj.data
-        if isinstance(obj, MemoryType):
-            return obj.value
-        return super().default(obj)
+    @classmethod
+    def load(cls, filepath: Path) -> "Region":
+        with filepath.resolve(strict=True).open("r") as f:
+            data = json.load(f)
+            return cls.from_dict(data)
 
 
-class MemoryLayout(UserList):
+@dataclass
+class Layout:
     """Memory Layout.
 
     Memory layout is a user defined list that can only accepts :py:class:`MemoryRegion` items.
     """
 
-    def __setitem__(self, index: T.Any, item: T.Any) -> None:
-        if type(item) is MemoryRegion:
-            self.data[index] = item
-        else:
-            raise TypeError("Item must be a MemoryRegion.")
+    regions: list[Region] = field(default_factory=list)
 
-    def append(self, item: MemoryRegion) -> None:
-        """Override :py:meth:`list.append`.
+    def append(self, region: Region) -> None:
+        self.regions.append(region)
 
-        Parameters
-        ----------
-        item: MemoryRegion
-            :py:class:`MemoryRegion` to append to the list
+    def save(self, filepath: Path) -> None:
+        data = asdict(self, dict_factory=Region.dict_factory)
+        with filepath.open("w") as f:
+            json.dump(data, f, indent=4)
 
-        Raises
-        ------
-        TypeError: if item type is not :py:class:`MemoryRegion`
-        """
-        if type(item) is MemoryRegion:
-            self.data.append(item)
-        else:
-            raise TypeError("Item must be a MemoryRegion.")
-
-    def save_as_json(self, file: PathLike) -> None:
-        """Save MemoryLayout as json file.
-
-        Parameters
-        ----------
-        file: PathLike
-            Path to json file to write
-        """
-        with open(file, "w") as f:
-            json.dump(self, f, indent=4, cls=_JSONEncoder)
+    # def load
