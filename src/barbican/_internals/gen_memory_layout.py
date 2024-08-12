@@ -13,7 +13,7 @@ from pathlib import Path
 import typing as T
 
 from ..relocation.elfutils import SentryElf, AppElf
-from ..utils.memory_layout import MemoryType, MemoryRegion, MemoryLayout
+from ..utils import memory_layout as memory
 from ..utils.pathhelper import ProjectPath
 from ..utils import align_to
 
@@ -34,26 +34,60 @@ def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]
     return sentry, apps
 
 
-def _add_kernel_regions(layout: MemoryLayout, sentry: SentryElf) -> None:
+def _add_kernel_regions(layout: memory.Layout, sentry: SentryElf) -> None:
     text_start_addr, _ = sentry.get_section_info(".isr_vector")
     ram_start_addr, _ = sentry.get_section_info(".bss")
     # XXX: hardcoded name
-    layout.append(MemoryRegion("kernel", MemoryType.TEXT, text_start_addr, sentry.flash_size))
-    layout.append(MemoryRegion("kernel", MemoryType.RAM, ram_start_addr, sentry.ram_size))
+    layout.append(
+        memory.Region(
+            name="kernel",
+            type=memory.Region.Type.Text,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Exec,
+            start_address=text_start_addr,
+            size=sentry.flash_size,
+        )
+    )
+
+    layout.append(
+        memory.Region(
+            name="kernel",
+            type=memory.Region.Type.Ram,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Write,
+            start_address=ram_start_addr,
+            size=sentry.ram_size,
+        )
+    )
 
 
-def _add_idle_regions(layout: MemoryLayout, sentry: SentryElf) -> T.Tuple[int, int]:
+def _add_idle_regions(layout: memory.Layout, sentry: SentryElf) -> T.Tuple[int, int]:
     idle_text_saddr, idle_text_size = sentry.get_section_info(".idle_task")
     idle_ram_saddr, idle_ram_size = sentry.get_section_info("._idle")
     # XXX: hardcoded name
-    layout.append(MemoryRegion("idle", MemoryType.TEXT, idle_text_saddr, idle_text_size))
-    layout.append(MemoryRegion("idle", MemoryType.RAM, idle_ram_saddr, idle_ram_size))
+    layout.append(
+        memory.Region(
+            name="idle",
+            type=memory.Region.Type.Text,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Exec,
+            start_address=idle_text_saddr,
+            size=idle_text_size,
+        )
+    )
+
+    layout.append(
+        memory.Region(
+            name="idle",
+            type=memory.Region.Type.Ram,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Write,
+            start_address=idle_ram_saddr,
+            size=idle_ram_size,
+        )
+    )
 
     return idle_text_saddr + idle_text_size, idle_ram_saddr + idle_ram_size
 
 
 def _add_app_regions(
-    layout: MemoryLayout, app: AppElf, memory_slot: T.Tuple[int, int]
+    layout: memory.Layout, app: AppElf, memory_slot: T.Tuple[int, int]
 ) -> T.Tuple[int, int]:
     task_text, task_ram = memory_slot
     # TODO: round up according to target arch (i.e. armv7 -> pow2, armv8 -> 32 bytes)
@@ -70,8 +104,25 @@ def _add_app_regions(
 
     # trim extension
     name, _ = app.name.split(".", maxsplit=1)
-    layout.append(MemoryRegion(name, MemoryType.TEXT, flash_saddr, flash_size))
-    layout.append(MemoryRegion(name, MemoryType.RAM, ram_saddr, ram_size))
+
+    layout.append(
+        memory.Region(
+            name=name,
+            type=memory.Region.Type.Text,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Exec,
+            start_address=flash_saddr,
+            size=flash_size,
+        )
+    )
+    layout.append(
+        memory.Region(
+            name=name,
+            type=memory.Region.Type.Ram,  # type: ignore
+            permission=memory.Region.Permission.Read | memory.Region.Permission.Write,
+            start_address=ram_saddr,
+            size=ram_size,
+        )
+    )
 
     return flash_saddr + flash_size, ram_saddr + ram_size
 
@@ -106,7 +157,7 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
     """
     sentry, apps = _get_project_elves(exelist)
 
-    layout = MemoryLayout()
+    layout = memory.Layout()
     _add_kernel_regions(layout, sentry)
     # FIXME: use application memory pool instead
     # This is not supported yet, applications are relocated right after idle task
@@ -115,7 +166,7 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
     for app in apps:
         next_memory_slot = _add_app_regions(layout, app, next_memory_slot)
 
-    layout.save_as_json(output)
+    layout.save(output)
 
 
 def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
@@ -155,15 +206,30 @@ def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> 
 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:
-    layout = MemoryLayout()
-    layout.append(MemoryRegion("dummy", MemoryType.TEXT, 0x08000000, 2 * 1024 * 1024))
-    layout.append(MemoryRegion("dummy", MemoryType.RAM, 0x20000000, 2 * 1024 * 1024))
-    layout.save_as_json(output)
+    layout = memory.Layout()
+    layout.append(
+        memory.Region(
+            name="dummy",
+            type=memory.Region.Type.Text,  # type: ignore
+            start_address=0x08000000,
+            size=2 * 1024 * 1024,
+        )
+    )
+    layout.append(
+        memory.Region(
+            name="dummy",
+            type=memory.Region.Type.Ram,  # type: ignore
+            start_address=0x20000000,
+            size=2 * 1024 * 1024,
+        )
+    )
+
+    layout.save(output)
 
 
 def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
-    parser.add_argument("output", help="output filename")
+    parser.add_argument("output", type=Path, help="output filename")
     parser.add_argument(
         "projectdir",
         type=Path,

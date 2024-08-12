@@ -41,7 +41,9 @@ def run_gen_ldscript(name: str, template: Path, layout: Path, output: Path) -> N
                 template_file.read()
             )
             with open(output, "w", encoding="utf-8") as linkerscript:
-                linkerscript.write(linkerscript_template.render(name=name, layout=memory_layout))
+                linkerscript.write(
+                    linkerscript_template.render(name=name, layout=memory_layout["regions"])
+                )
 
 
 def argument_parser() -> ArgumentParser:
