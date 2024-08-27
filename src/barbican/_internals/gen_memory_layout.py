@@ -12,6 +12,8 @@ import os
 from pathlib import Path
 import typing as T
 
+from dts_utils import Dts
+
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils import memory_layout as memory
 from ..utils.pathhelper import ProjectPath
@@ -87,7 +89,11 @@ def _add_idle_regions(layout: memory.Layout, sentry: SentryElf) -> T.Tuple[int, 
 
 
 def _add_app_regions(
-    layout: memory.Layout, app: AppElf, memory_slot: T.Tuple[int, int]
+    layout: memory.Layout,
+    app: AppElf,
+    memory_slot: T.Tuple[int, int],
+    code_limit: int,
+    ram_limit: int,
 ) -> T.Tuple[int, int]:
     task_text, task_ram = memory_slot
     # TODO: round up according to target arch (i.e. armv7 -> pow2, armv8 -> 32 bytes)
@@ -101,6 +107,13 @@ def _add_app_regions(
     # ram_saddr = align_to(task_ram, ram_size)
     flash_saddr = align_to(task_text, 32)
     ram_saddr = align_to(task_ram, 32)
+
+    # XXX: dedicated error
+    if flash_saddr + flash_size >= code_limit:
+        raise Exception("task code region overflow")
+
+    if ram_saddr + ram_size >= ram_limit:
+        raise Exception("ram code region overflow")
 
     # trim extension
     name, _ = app.name.split(".", maxsplit=1)
@@ -127,7 +140,7 @@ def _add_app_regions(
     return flash_saddr + flash_size, ram_saddr + ram_size
 
 
-def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
+def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path]) -> None:
     """Memory layout internal command.
 
     This command does the barbican application memory placement in the dedicated memory pool.
@@ -155,54 +168,30 @@ def run_gen_memory_layout(output: Path, exelist: list[Path]) -> None:
       - :py:mod:`.plot_memory_layout`
       - :py:mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
     """
+    dts = Dts(dts_filename.resolve(strict=True))
     sentry, apps = _get_project_elves(exelist)
 
     layout = memory.Layout()
     _add_kernel_regions(layout, sentry)
-    # FIXME: use application memory pool instead
-    # This is not supported yet, applications are relocated right after idle task
-    next_memory_slot = _add_idle_regions(layout, sentry)
+    _add_idle_regions(layout, sentry)
+
+    # TODO:
+    #  Handle multiple bank
+    reserved_memory = getattr(dts, "reserved-memory")
+    tasks_code = reserved_memory.tasks_code
+    tasks_ram = reserved_memory.tasks_ram
+
+    if not tasks_code or not tasks_ram:
+        raise ValueError("missing applications reserved memory node in dts file")
+
+    next_memory_slot = (tasks_code.reg[0], tasks_ram.reg[0])
+    code_limit = tasks_code.reg[0] + tasks_code.reg[1]
+    ram_limit = tasks_ram.reg[0] + tasks_ram.reg[1]
 
     for app in apps:
-        next_memory_slot = _add_app_regions(layout, app, next_memory_slot)
+        next_memory_slot = _add_app_regions(layout, app, next_memory_slot, code_limit, ram_limit)
 
     layout.save(output)
-
-
-def run_gen_glob_memory_layout(output: Path, projectdir: Path, prefix: Path) -> None:
-    """Memory layout internal command.
-
-    This command does the barbican application memory placement in the dedicated memory pool.
-    According to target architecture, each application is placed in memory in order to fit
-    MPU region alignment and size.
-    All applications must fit in target device RAM and Flash.
-    This command outputs a memory layout json file.
-
-    Parameters
-    ----------
-    output: Path
-        output (in json) file path
-    projectdir: Path
-        Project top level directory
-    prefix: Path
-        Install staging prefix
-
-    Notes
-    -----
-      Idle and Autotest are special apps that are already placed in memory in a dedicated memory
-      pool at kernel build time.
-
-    .. warning:: Sentry kernel and applications must be built before calling this internal
-
-    .. note:: generated memory layout json file is used as input the following internals:
-      - :py:mod:`.relocate_elf` (PIC and/or prebuilt app)
-      - :py:mod:`.plot_memory_layout`
-      - :py:mod:`.gen_ldscript` (in case of noPIC w/ partially linked application)
-    """
-    path = ProjectPath.load(projectdir / "build")
-    return run_gen_memory_layout(
-        output, list((path.sysroot_dir / path.rel_prefix / "bin").glob("*.elf"))
-    )
 
 
 def run_gen_dummy_memory_layout(output: Path) -> None:
@@ -245,6 +234,9 @@ def argument_parser() -> ArgumentParser:
         "--dummy", action="store_true", required=False, help="generate a dummy layout"
     )
     parser.add_argument(
+        "--dts", type=Path, action="store", required=False, help="dts file to use for memory placement"
+    )
+    parser.add_argument(
         "-l",
         "--list",
         dest="exelist",
@@ -252,8 +244,7 @@ def argument_parser() -> ArgumentParser:
         nargs="+",
         type=Path,
         required=False,
-        help="List of executable to use for the firmware layout,"
-        "if empty, glob *.elf in staging dir",
+        help="List of executable to use for the firmware layout"
     )
 
     return parser
@@ -266,6 +257,8 @@ def run(argv: T.List[str]) -> None:
     if args.dummy:
         run_gen_dummy_memory_layout(args.output)
     elif args.exelist:
-        run_gen_memory_layout(args.output, args.exelist)
+        run_gen_memory_layout(args.output, args.dts, args.exelist)
     else:
-        run_gen_glob_memory_layout(args.output, args.projectdir, args.prefix)
+        # XXX: handle invalid command
+        raise ValueError
+        # run_gen_glob_memory_layout(args.output, args.projectdir, args.prefix)

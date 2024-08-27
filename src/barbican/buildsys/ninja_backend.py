@@ -99,21 +99,23 @@ class NinjaGenFile:
     def add_internal_gen_memory_layout_target(
         self,
         output: Path,
+        dts: Path,
         dependencies: list,
         sys_exelist: list,
         app_exelist: list,
     ) -> list:
         self._ninja.newline()
-        exelist_opt = " -l ".join(str(exe.resolve()) for exe in sys_exelist + app_exelist)
+        exelist_opt = " ".join(f" -l {str(exe.resolve())}" for exe in sys_exelist + app_exelist)
         implicit = [f"{package.name}_install.stamp" for package in dependencies]
         implicit.extend([str(exe.resolve()) for exe in app_exelist])
+        implicit.append(str(dts))
         return self._ninja.build(
             str(output),
             "internal",
             implicit=implicit,
             variables={
                 "cmd": "gen_memory_layout",
-                "args": f"{str(output)} {exelist_opt}",
+                "args": f"{str(output)} --dts {str(dts)} {exelist_opt}",
                 "description": "generating firmware memory layout",
             },
         )
