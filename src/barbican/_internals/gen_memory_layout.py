@@ -178,11 +178,14 @@ def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path])
     # TODO:
     #  Handle multiple bank
     reserved_memory = getattr(dts, "reserved-memory")
+    if not reserved_memory:
+        raise Exception("missing reserved memory node in dts file")
+
     tasks_code = reserved_memory.tasks_code
     tasks_ram = reserved_memory.tasks_ram
 
     if not tasks_code or not tasks_ram:
-        raise ValueError("missing applications reserved memory node in dts file")
+        raise Exception("missing applications reserved memory node in dts file")
 
     next_memory_slot = (tasks_code.reg[0], tasks_ram.reg[0])
     code_limit = tasks_code.reg[0] + tasks_code.reg[1]
