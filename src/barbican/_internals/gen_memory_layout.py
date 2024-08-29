@@ -16,7 +16,6 @@ from dts_utils import Dts
 
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils import memory_layout as memory
-from ..utils.pathhelper import ProjectPath
 from ..utils import align_to
 
 
@@ -153,8 +152,14 @@ def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path])
     ----------
     output: Path
         output (in json) file path
+    dts_filename: Path
+        dts file to use
     exelist: list[Path]
         list of executable path to consider
+
+    Raises
+    ------
+    Exception if reserved memory for tasks code and/or ram is missing
 
     Notes
     -----
@@ -237,7 +242,11 @@ def argument_parser() -> ArgumentParser:
         "--dummy", action="store_true", required=False, help="generate a dummy layout"
     )
     parser.add_argument(
-        "--dts", type=Path, action="store", required=False, help="dts file to use for memory placement"
+        "--dts",
+        type=Path,
+        action="store",
+        required=False,
+        help="dts file to use for memory placement",
     )
     parser.add_argument(
         "-l",
@@ -247,7 +256,7 @@ def argument_parser() -> ArgumentParser:
         nargs="+",
         type=Path,
         required=False,
-        help="List of executable to use for the firmware layout"
+        help="List of executable to use for the firmware layout",
     )
 
     return parser
