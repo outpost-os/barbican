@@ -140,6 +140,9 @@ class Project:
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
             output=pathlib.Path(self.path.private_build_dir, "layout.json"),
+            dts=pathlib.Path(
+                self.path.sysroot_data_dir, f"{pathlib.Path(self._toml['dts']).name}.pp"
+            ),
             dependencies=self._packages,
             sys_exelist=layout_sys_exelist,
             app_exelist=layout_app_exelist,
