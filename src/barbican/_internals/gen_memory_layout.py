@@ -16,7 +16,7 @@ from dts_utils import Dts
 
 from ..relocation.elfutils import SentryElf, AppElf
 from ..utils import memory_layout as memory
-from ..utils import align_to
+from ..utils import align_to, pow2_round_up
 
 
 def _get_project_elves(exelist: list[Path]) -> T.Tuple[SentryElf, T.List[AppElf]]:
@@ -87,25 +87,62 @@ def _add_idle_regions(layout: memory.Layout, sentry: SentryElf) -> T.Tuple[int, 
     return idle_text_saddr + idle_text_size, idle_ram_saddr + idle_ram_size
 
 
+def _arm_pmsa_v7_align_region(saddr: int, size: int) -> tuple[int, int]:
+    """Return start address and size to be PMSAv7 MPU compliant.
+
+    ARM Protected Memory System Architecture for arm v7(PMSAv7) requires that memory
+    region size is align on a power of 2 and the base address is a multiple of that size.
+
+    Parameters
+    ----------
+    saddr: int
+        region start address
+    size: int
+        region size
+
+    Returns
+    -------
+    tuple[int, int]
+        Tuple containing fixed up start address and size for PMSAv7 MPU requirements
+    """
+    size = pow2_round_up(size)
+    saddr = align_to(saddr, size)
+    return saddr, size
+
+
+def _arm_pmsa_v8_align_region(saddr: int, size: int) -> tuple[int, int]:
+    """Return start address and size to be PMSAv8 MPU compliant.
+
+    ARM Protected Memory System Architecture for arm v8(PMSAv8) requires that memory
+    region size and start address are multiple of 32.
+
+    Parameters
+    ----------
+    saddr: int
+        region start address
+    size: int
+        region size
+
+    Returns
+    -------
+    tuple[int, int]
+        Tuple containing fixed up start address and size for PMSAv8 MPU requirements
+    """
+    return align_to(saddr, 32), align_to(size, 32)
+
+
 def _add_app_regions(
     layout: memory.Layout,
     app: AppElf,
-    memory_slot: T.Tuple[int, int],
+    memory_slot: tuple[int, int],
     code_limit: int,
     ram_limit: int,
-) -> T.Tuple[int, int]:
+    region_fixup: T.Callable,
+) -> tuple[int, int]:
     task_text, task_ram = memory_slot
-    # TODO: round up according to target arch (i.e. armv7 -> pow2, armv8 -> 32 bytes)
-    # flash_size = pow2_round_up(app.flash_size)
-    # ram_size = pow2_round_up(app.ram_size)
-    flash_size = align_to(app.flash_size, 32)
-    ram_size = align_to(app.ram_size, 32)
 
-    # TODO: only for armv7
-    # flash_saddr = align_to(task_text, flash_size)
-    # ram_saddr = align_to(task_ram, ram_size)
-    flash_saddr = align_to(task_text, 32)
-    ram_saddr = align_to(task_ram, 32)
+    flash_saddr, flash_size = region_fixup(task_text, app.flash_size)
+    ram_saddr, ram_size = region_fixup(task_ram, app.ram_size)
 
     # XXX: dedicated error
     if flash_saddr + flash_size >= code_limit:
@@ -176,6 +213,11 @@ def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path])
     dts = Dts(dts_filename.resolve(strict=True))
     sentry, apps = _get_project_elves(exelist)
 
+    # default to armv7 pmsav7 alignment
+    _mpu_memory_region_fixup = _arm_pmsa_v7_align_region
+    if dts.mpu and dts.mpu.compatible == "arm,armv8m-mpu":
+        _mpu_memory_region_fixup = _arm_pmsa_v8_align_region
+
     layout = memory.Layout()
     _add_kernel_regions(layout, sentry)
     _add_idle_regions(layout, sentry)
@@ -197,7 +239,9 @@ def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path])
     ram_limit = tasks_ram.reg[0] + tasks_ram.reg[1]
 
     for app in apps:
-        next_memory_slot = _add_app_regions(layout, app, next_memory_slot, code_limit, ram_limit)
+        next_memory_slot = _add_app_regions(
+            layout, app, next_memory_slot, code_limit, ram_limit, _mpu_memory_region_fixup
+        )
 
     layout.save(output)
 
