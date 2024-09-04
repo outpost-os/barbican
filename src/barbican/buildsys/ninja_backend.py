@@ -108,7 +108,6 @@ class NinjaGenFile:
         exelist_opt = " ".join(f" -l {str(exe.resolve())}" for exe in sys_exelist + app_exelist)
         implicit = [f"{package.name}_install.stamp" for package in dependencies]
         implicit.extend([str(exe.resolve()) for exe in app_exelist])
-        implicit.append(str(dts))
         return self._ninja.build(
             str(output),
             "internal",
