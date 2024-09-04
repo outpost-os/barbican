@@ -122,7 +122,8 @@ class AppElf(Elf):
 
     Raises
     ------
-    ValueError if the package metadata 'type' is not 'outpost application'
+    ValueError
+        Package metadata 'type' is not 'outpost application'
     """
 
     # Section to relocate

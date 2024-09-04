@@ -196,7 +196,8 @@ def run_gen_memory_layout(output: Path, dts_filename: Path, exelist: list[Path])
 
     Raises
     ------
-    Exception if reserved memory for tasks code and/or ram is missing
+    Exception
+        Reserved memory for tasks code and/or ram is missing
 
     Notes
     -----
