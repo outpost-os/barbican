@@ -56,7 +56,7 @@ class GitTestProjectMock:
 
 class TestGit(GitTestBase):
     @pytest.mark.dependency()
-    def test_download(self, private_dir, origin):
+    def test_download_branch_ref(self, private_dir, origin):
         prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
         repo = Git(prj_mock)
         repo.download()
@@ -64,13 +64,54 @@ class TestGit(GitTestBase):
         self.add_and_commit_random_file(origin)
         assert repo._repo.head.commit != origin.head.commit
 
-    @pytest.mark.dependency(depends=["TestGit::test_download"])
+    @pytest.mark.dependency(depends=["TestGit::test_download_branch_ref"])
     def test_update_same_branch(self, private_dir, origin):
         prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
         repo = Git(prj_mock)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
         assert repo._repo.head.commit == origin.head.commit
+        self.add_and_commit_random_file(origin)
+        assert repo._repo.head.commit != origin.head.commit
 
+    @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
+    def test_update_to_commit(self, private_dir, origin):
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, str(origin.head.commit))
+        repo = Git(prj_mock)
+        assert repo._repo.head.commit != origin.head.commit
+        repo.update()
+        assert repo._repo.head.commit == origin.head.commit
+        self.add_and_commit_random_file(origin)
+        assert repo._repo.head.commit != origin.head.commit
 
-    # TODO Add change branch, untracked branch, tag, commit
+    @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
+    def test_update_from_commit_to_branch(self, private_dir, origin):
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, 'main')
+        repo = Git(prj_mock)
+        assert repo._repo.head.commit != origin.head.commit
+        repo.update()
+        assert repo._repo.head.commit == origin.head.commit
+        self.add_and_commit_random_file(origin)
+        assert repo._repo.head.commit != origin.head.commit
+
+    @pytest.mark.dependency()
+    def test_download_commit(self, private_dir, origin):
+        commit = origin.head.commit
+        prj_mock = GitTestProjectMock(private_dir, "test_commit", origin.git_dir, str(commit))
+        repo = Git(prj_mock)
+        self.add_and_commit_random_file(origin)
+        repo.download()
+        assert repo._repo.head.commit == commit
+        assert repo._repo.head.commit != origin.head.commit
+
+    def test_download_invalid_ref(self, private_dir, origin):
+        with pytest.raises(Exception):
+            prj_mock = GitTestProjectMock(private_dir, "test_invalid_ref", origin.git_dir, "pouette")
+            repo = Git(prj_mock)
+            repo.download()
+
+    def test_download_invalid_commit(self, private_dir, origin):
+        with pytest.raises(Exception):
+            prj_mock = GitTestProjectMock(private_dir, "test_invalid_commit", origin.git_dir, str("a"*40))
+            repo = Git(prj_mock)
+            repo.download()
