@@ -93,34 +93,78 @@ class Git(ScmBaseClass):
             logger.warning(f"{self.name} not a git repository")
             # XXX: Fatal or rm and clone ?
 
+    @staticmethod
+    def is_hex_sha(string: str) -> bool:
+        """Check if given is an commit sha in hex.
+
+        Parameters
+        ----------
+        string: str
+            input string
+
+        Returns
+        -------
+        True if string matches git sha format
+        """
+        return Repo.re_hexsha_only.match(string)
+
+    def is_valid_commit_sha(self, sha: str) -> bool:
+        return self.is_hex_sha(sha) and self._repo.is_valid_object(sha)
+
+    def _reset(self, revision: str, hard: bool = True) -> None:
+        args: list(str) = []
+        if hard:
+            args.append("--hard")
+        args.append(str(self.revision))
+        self._repo.git.reset(args)
+
+    def _reset_head(self, sha: str) -> None:
+        if not self.is_valid_commit_sha(sha):
+            raise ValueError
+        self._repo.head.reset(sha)
+
+    def _checkout(self, sha: str) -> None:
+        if not self.is_valid_commit_sha(sha):
+            raise ValueError
+        self._repo.git.checkout(sha)
+
     def clone(self) -> None:
-        self._repo = Repo.clone_from(
-            url=self.url,
-            to_path=self.name,
-            progress=GitProgressBar(),  # type: ignore
-            branch=self.revision,
-            single_branch=True,
-        )
+        if self.is_hex_sha(self.revision):
+            self._repo = Repo.clone_from(
+                url=self.url,
+                to_path=self.name,
+                progress=GitProgressBar(),  # type: ignore
+                no_checkout=True,
+            )
+            self._checkout(self.revision)
+        else:
+            self._repo = Repo.clone_from(
+                url=self.url,
+                to_path=self.name,
+                progress=GitProgressBar(),  # type: ignore
+                branch=self.revision,
+                single_branch=True,
+            )
         logger.info(f"git clone {self.name}@{self.revision} ({self._repo.head.commit})")
 
     def fetch(self) -> None:
         logger.info(f"git fetch {self.name} origin/{self.revision}")
 
-        # Check if revision is already tracked,
-        # if not, refspec must be `revision:revision`
-        # `revision` otherwise
-        refspec = f"{self.revision}:{self.revision}"
-        for ref in self._repo.heads:
-            if self.revision in ref.name:
-                # trim after colon if any
-                refspec, _ = refspec.split(":", 1)
-        self._repo.remotes.origin.fetch(refspec=refspec, progress=GitProgressBar())  # type: ignore
+        fetch_infos = self._repo.remotes.origin.fetch(refspec=self.revision, progress=GitProgressBar())  # type: ignore
 
-    def reset(self) -> None:
-        self._repo.git.reset(["--hard", self.revision])
-        logger.info(
-            f"git checkout {self.name}@{self._repo.heads[0].name} ({self._repo.heads[0].commit})"
-        )
+        # this shouldn't occur
+        if len(fetch_infos) != 1:
+            raise Exception
+
+        fetch_info = fetch_infos[0]
+
+        if self.is_hex_sha(self.revision):
+            self._checkout(self.revision)
+        else:
+            if self._repo.head.is_detached or self._repo.active_branch != self.revision:
+                self._repo.git.switch(self.revision)
+            self._reset_head(str(fetch_info.commit))
+            self._reset(str(fetch_info.commit))
 
     def clean(self) -> None:
         logger.info(f"git clean {self.name}")
@@ -148,7 +192,6 @@ class Git(ScmBaseClass):
         old_ref = self._repo.head.commit
 
         self.fetch()
-        self.reset()
         self.clean()
 
         new_ref = self._repo.head.commit
