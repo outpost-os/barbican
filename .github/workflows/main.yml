@@ -98,4 +98,7 @@ jobs:
         set -x
         input_version=${{ matrix.python-version }}
         pyversion="py${input_version/./}"
+        git config --global --add safe.directory $GITHUB_WORKSPACE
+        git config --global user.email "CI.Joe@ci-unittest.com"
+        git config --global user.name "CI Joe"
         TOX_ENV=$pyversion tox -e unittests
