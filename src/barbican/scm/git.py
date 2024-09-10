@@ -94,25 +94,38 @@ class Git(ScmBaseClass):
             # XXX: Fatal or rm and clone ?
 
     @staticmethod
-    def is_hex_sha(string: str) -> bool:
+    def is_hex_sha(sha: str) -> bool:
         """Check if given is an commit sha in hex.
 
         Parameters
         ----------
-        string: str
-            input string
+        sha: str
+            sha in ascii hex format
 
         Returns
         -------
-        True if string matches git sha format
+        bool
+            True if sha matches git SHA format, False otherwise
         """
-        return Repo.re_hexsha_only.match(string)
+        return Repo.re_hexsha_only.match(sha) is not None
 
     def is_valid_commit_sha(self, sha: str) -> bool:
+        """Check that the given sha is a valid object.
+
+        Parameters
+        ----------
+        sha: str
+            sha in ascii hex format
+
+        Returns
+        -------
+        bool
+            True id sha is well-formed and a valid git object (commit, tag, etc.)
+        """
         return self.is_hex_sha(sha) and self._repo.is_valid_object(sha)
 
     def _reset(self, revision: str, hard: bool = True) -> None:
-        args: list(str) = []
+        args: list[str] = list()
         if hard:
             args.append("--hard")
         args.append(str(self.revision))
@@ -150,9 +163,11 @@ class Git(ScmBaseClass):
     def fetch(self) -> None:
         logger.info(f"git fetch {self.name} origin/{self.revision}")
 
-        fetch_infos = self._repo.remotes.origin.fetch(refspec=self.revision, progress=GitProgressBar())  # type: ignore
+        fetch_infos = self._repo.remotes.origin.fetch(
+            refspec=self.revision, progress=GitProgressBar()
+        )  # type: ignore
 
-        # this shouldn't occur
+        # this should never occurs
         if len(fetch_infos) != 1:
             raise Exception
 

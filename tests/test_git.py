@@ -86,7 +86,7 @@ class TestGit(GitTestBase):
 
     @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
     def test_update_from_commit_to_branch(self, private_dir, origin):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, 'main')
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
         repo = Git(prj_mock)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
@@ -106,12 +106,16 @@ class TestGit(GitTestBase):
 
     def test_download_invalid_ref(self, private_dir, origin):
         with pytest.raises(Exception):
-            prj_mock = GitTestProjectMock(private_dir, "test_invalid_ref", origin.git_dir, "pouette")
+            prj_mock = GitTestProjectMock(
+                private_dir, "test_invalid_ref", origin.git_dir, "pouette"
+            )
             repo = Git(prj_mock)
             repo.download()
 
     def test_download_invalid_commit(self, private_dir, origin):
         with pytest.raises(Exception):
-            prj_mock = GitTestProjectMock(private_dir, "test_invalid_commit", origin.git_dir, str("a"*40))
+            prj_mock = GitTestProjectMock(
+                private_dir, "test_invalid_commit", origin.git_dir, str("a" * 40)
+            )
             repo = Git(prj_mock)
             repo.download()
