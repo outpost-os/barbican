@@ -93,12 +93,14 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Setup git
+      uses: embedded-devops/action-setup-git@main
+      with:
+        ssh_key: ${{ secrets.GHE_SSH_KEY }}
+        ssh_known_hosts: ${{ secrets.GHE_HOST_KEY }}
     - name: Run Tox
       run: |
         set -x
         input_version=${{ matrix.python-version }}
         pyversion="py${input_version/./}"
-        git config --global --add safe.directory $GITHUB_WORKSPACE
-        git config --global user.email "CI.Joe@ci-unittest.com"
-        git config --global user.name "CI Joe"
         TOX_ENV=$pyversion tox -e unittests
