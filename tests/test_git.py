@@ -5,6 +5,7 @@ from random import choices
 from string import ascii_letters
 
 from git import Repo
+from git.exc import GitCommandError
 
 from barbican.scm import Git
 
@@ -33,6 +34,19 @@ class GitTestBase:
         self.add_and_commit_random_file(origin_repo)
         return origin_repo
 
+    @pytest.fixture(scope="class")
+    def default_branch(self, origin):
+        # master by default, until git v2.28, this is hardcoded.
+        # from git v2.28, this can be changed through `init.defaultBranch`
+        default_branch = "master"
+        major, minor, _ = origin.git.version_info
+        if major >= 2 and minor >= 28:
+            try:
+                default_branch = origin.git.config(["--global", "init.defaultBranch"])
+            except GitCommandError:
+                pass
+        return default_branch
+
 
 class GitTestProjectMock:
     class _Parent:
@@ -56,8 +70,8 @@ class GitTestProjectMock:
 
 class TestGit(GitTestBase):
     @pytest.mark.dependency()
-    def test_download_branch_ref(self, private_dir, origin):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
+    def test_download_branch_ref(self, private_dir, origin, default_branch):
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
         repo = Git(prj_mock)
         repo.download()
         assert repo._repo.head.commit == origin.head.commit
@@ -65,8 +79,8 @@ class TestGit(GitTestBase):
         assert repo._repo.head.commit != origin.head.commit
 
     @pytest.mark.dependency(depends=["TestGit::test_download_branch_ref"])
-    def test_update_same_branch(self, private_dir, origin):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
+    def test_update_same_branch(self, private_dir, origin, default_branch):
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
         repo = Git(prj_mock)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
@@ -85,8 +99,8 @@ class TestGit(GitTestBase):
         assert repo._repo.head.commit != origin.head.commit
 
     @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
-    def test_update_from_commit_to_branch(self, private_dir, origin):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, "main")
+    def test_update_from_commit_to_branch(self, private_dir, origin, default_branch):
+        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
         repo = Git(prj_mock)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
