@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Python Doc
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+      - 'src/**'
+      - 'doc/**'
+      - 'tox.ini'
+      - '.github/workflows/doc.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'doc/**'
+      - 'tox.ini'
+      - '.github/workflows/doc.yml'
+
+jobs:
+  doc:
+    uses: outpost-os/pipeline-python/.github/workflows/doc.yml@v1
+    with:
+      python-version: '3.10'
