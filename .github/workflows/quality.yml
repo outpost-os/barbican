@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Python Code Quality
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  codeql:
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    uses: outpost-os/pipeline-python/.github/workflows/codeql.yml@v1
