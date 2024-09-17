@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: New features and enhancements 🎉
+      labels:
+        - feature
+        - enhancement
+    - title: Bug fixes 🐛
+      labels:
+        - bug
+    - title: CI/CD evolutions
+      labels:
+        - ci-cd
+    - title: Documentation and support
+      labels:
+        - documentation 📚
+    - title: Other Changes
+      labels:
+        - "*"
