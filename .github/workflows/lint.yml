@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Python Lint
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+      - 'src/**'
+      - 'tox.ini'
+      - '.github/workflows/lint.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tox.ini'
+      - '.github/workflows/lint.yml'
+
+jobs:
+  lint:
+    uses: outpost-os/pipeline-python/.github/workflows/lint.yml@v1
+    with:
+      python-version: '3.10'

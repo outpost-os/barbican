@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+comment: false
+github_checks:
+    annotations: false
