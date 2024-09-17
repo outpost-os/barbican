@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Proposing a feature/enancement
+description: File an evolution proposition
+title: "feature: "
+projects: ["outpost-os/1"]
+assignees:
+  - fvalette-ledger
+  - pthierry-ledger
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new feature or an evolution!
+  - type: textarea
+    id: description
+    attributes:
+      label: What is proposed ?
+      description: feature/enhancement proposal
