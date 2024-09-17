@@ -7,13 +7,13 @@ requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "barbican"
+name = "outpost-barbican"
 description = "Outpost-OS build system"
 dynamic = ["version"]
 requires-python = ">= 3.10"
 readme = "README.md"
 authors = [
-  {email = "Ledger SAS <firmware@ledger.fr>"},
+  {email = "Ledger SAS <outpost-os@ledger.fr>"},
 ]
 license = {file = "LICENSES/Apache-2.0.txt"}
 dependencies = [
@@ -49,13 +49,13 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://git.orange.ledgerlabs.net/outpost"
-Documentation = "https://pages.git.orange.ledgerlabs.net/outpost/outpostpedia/"
-Repository = "https://git.orange.ledgerlabs.net/outpost/python-outpost.git"
-Issues = "https://git.orange.ledgerlabs.net/outpost/python-outpost/issues"
+Homepage = "https://github.com/outpost-os"
+# Documentation = TODO
+Repository = "https://github.com/outpost-os/barbican"
+Issues = "https://github.com/outpost-os/barbican/issues"
 
 [project.scripts]
-barbican = "barbican.barbican:main"
+barbican = "outpost.barbican.barbican:main"
 
 [project.optional-dependencies]
 devel = [

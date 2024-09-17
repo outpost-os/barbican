@@ -4,4 +4,4 @@
 
 from importlib import metadata
 
-__version__ = metadata.version("barbican")
+__version__ = metadata.version("outpost.barbican")

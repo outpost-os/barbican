@@ -1,7 +1,7 @@
 from importlib import metadata
 
 # General information about the project.
-project = "barbican"
+project = "outpost.barbican"
 copyright = "2024, Ledger SAS"
 author = "Ledger"
 
@@ -34,8 +34,9 @@ napoleon_include_private_with_doc = True
 napoleon_attr_annotations = True
 
 # Autoapi configuration
-autoapi_dirs = ["../src"]
+autoapi_dirs = ["../src/outpost"]
 autoapi_add_toctree_entry = False
+autoapi_python_use_implicit_namespaces = True
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"

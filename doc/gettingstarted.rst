@@ -13,7 +13,7 @@ virtualenv).
 
 .. code-block:: console
 
-    pip install [--user] barbican
+    pip install [--user] outpost-barbican
 
 .. note::
     Do not install for user in a virtualenv.
@@ -73,7 +73,7 @@ python linting, type checking, unit testing.
 
 .. code-block:: console
 
-    pip install [--user] barbican[devel]
+    pip install [--user] outpost-barbican[devel]
 
 doc
 """
@@ -90,7 +90,7 @@ is `numpydoc <https://numpydoc.readthedocs.io/en/latest/index.html>`_
 
 .. code-block:: console
 
-    pip install [--user] barbican[doc]
+    pip install [--user] outpost-barbican[doc]
 
 tools
 """""
@@ -107,7 +107,7 @@ a firmware.
 
 .. code-block:: console
 
-    pip install [--user] barbican[tools]
+    pip install [--user] outpost-barbican[tools]
 
 .. tip::
 
@@ -115,7 +115,7 @@ a firmware.
 
     .. code-block:: console
 
-        pip install [--user] barbican[devel,doc,tools]
+        pip install [--user] outpost-barbican[devel,doc,tools]
 
 Development
 -----------

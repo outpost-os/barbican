@@ -2,10 +2,10 @@
 =======================
 
 .. argparse::
-   :module: barbican._internals.gen_task_metadata_bin
+   :module: outpost.barbican._internals.gen_task_metadata_bin
    :func: argument_parser
    :prog: barbican --internal gen_task_metadata_bin
 
 .. seealso::
 
-    :py:mod:`barbican._internals.gen_task_metadata_bin` module documentation
+    :py:mod:`outpost.barbican._internals.gen_task_metadata_bin` module documentation

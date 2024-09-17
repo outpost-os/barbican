@@ -2,10 +2,10 @@
 ==========
 
 .. argparse::
-   :module: barbican._internals.srec_cat
+   :module: outpost.barbican._internals.srec_cat
    :func: argument_parser
    :prog: barbican --internal srec_cat
 
 .. seealso::
 
-    :py:mod:`barbican._internals.srec_cat` module documentation
+    :py:mod:`outpost.barbican._internals.srec_cat` module documentation
