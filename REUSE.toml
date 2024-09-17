@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 version = 1
-SPDX-PackageName = "barbican"
-SPDX-PackageSupplier = "Ledger SAS <firmware@ledger.fr>"
-SPDX-PackageDownloadLocation = "https://github.com/outpost-os/python-barbican"
+SPDX-PackageName = "outpost-barbican"
+SPDX-PackageSupplier = "Ledger SAS <outpost-os@ledger.fr>"
+SPDX-PackageDownloadLocation = "https://github.com/outpost-os/barbican"
 
 [[annotations]]
 path = "doc/**"

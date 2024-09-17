@@ -6,7 +6,7 @@ import dataclasses
 import pytest
 import typing
 
-import barbican.utils.memory_layout as memory
+import outpost.barbican.utils.memory_layout as memory
 
 
 class TestMemoryRegion:

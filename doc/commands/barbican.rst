@@ -2,6 +2,6 @@ Command line tool
 ==========================
 
 .. argparse::
-   :module: barbican.barbican
+   :module: outpost.barbican.barbican
    :func: main_argument_parser
    :prog: barbican

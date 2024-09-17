@@ -5,4 +5,4 @@ Barbican Python API
    :maxdepth: 2
    :caption: Contents:
 
-   autoapi/barbican/index
+   autoapi/outpost/barbican/index
