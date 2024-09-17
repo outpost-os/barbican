@@ -30,11 +30,25 @@ class GitTestBase:
         repo.index.add(file)
         repo.index.commit(f"Adding {file.name}")
 
+    @staticmethod
+    def set_repo_default_user_config(repo: Repo) -> None:
+        name: str
+        email: str
+
+        with repo.config_reader(config_level="repository") as reader:
+            name = reader.get_value("user", "name", "CI Joe")
+            email = reader.get_value("user", "email", "ci.joe@ci.com")
+
+        with repo.config_writer(config_level="repository") as writer:
+            writer.set_value("user", "name", name)
+            writer.set_value("user", "email", email)
+
     @pytest.fixture(scope="class")
     def origin(self, private_dir):
         origin_dir = private_dir / "origin"
         # initialize empty git repository
         origin_repo = Repo.init(origin_dir)
+        self.set_repo_default_user_config(origin_repo)
         self.add_and_commit_random_file(origin_repo)
         return origin_repo
 
