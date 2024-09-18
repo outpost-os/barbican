@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .git import Git
+from enum import auto, unique
+import collections.abc
 from .scm import ScmBaseClass
+from ..utils import StrEnum
 
 from typing import TYPE_CHECKING
 
@@ -12,10 +14,34 @@ if TYPE_CHECKING:
 
 __all__ = ["Git"]
 
-SCM_FACTORY_DICT = {
-    "git": Git,
-    # TODO tarball, etc.
-}
+
+@unique
+class ScmMethodEnum(StrEnum):
+    Git = auto()
+
+
+class ScmMethodFactoryMap(collections.abc.Mapping[ScmMethodEnum, collections.abc.Callable]):
+    def __init__(self) -> None:
+        self._key_type = ScmMethodEnum
+
+    def __len__(self):
+        return len(self._key_type)
+
+    def __iter__(self):
+        yield from [k.value for k in list(self._key_type)]
+
+    def __getitem__(self, key):
+        method = self._key_type(key)
+
+        from importlib import import_module
+        import sys
+
+        return getattr(
+            import_module("." + method.value, sys.modules[__name__].__name__), method.name
+        )
+
+
+SCM_FACTORY_DICT = ScmMethodFactoryMap()
 
 
 def scm_create(package: "Package") -> ScmBaseClass:
