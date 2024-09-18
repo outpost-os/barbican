@@ -11,7 +11,7 @@ from string import ascii_letters
 from git import Repo
 from git.exc import GitCommandError
 
-from outpost.barbican.scm import Git
+from outpost.barbican.scm.git import Git
 
 
 class GitTestBase:
