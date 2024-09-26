@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2024 Ledger SAS
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Upload Python Package to jfrog
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  publish:
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    uses: outpost-os/pipeline-python/.github/workflows/publish.yml@main
+    with:
+      environment: publish
+      runner: outpost-os-shared-small
+      python-version: '3.10'
+      build-name: outpost-barbican-dev
+      module-name: outpost-barbican
+      repo-name: outpost-pypi-dev-green
+      virtual-repo-name: outpost-pypi-virtual-green
