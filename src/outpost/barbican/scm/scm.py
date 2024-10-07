@@ -22,8 +22,9 @@ if TYPE_CHECKING:
 
 
 class ScmBaseClass(ABC):
-    def __init__(self, package: "Package") -> None:
+    def __init__(self, package: "Package", config: dict) -> None:
         self._package = package
+        self._config = config
 
     @working_directory_attr("project_sourcedir")
     def download(self) -> None:
@@ -50,11 +51,11 @@ class ScmBaseClass(ABC):
 
     @property
     def url(self) -> str:
-        return self._package.url
+        return self._config["uri"]
 
     @property
     def revision(self) -> str:
-        return self._package.revision
+        return self._config["revision"]
 
     @abstractmethod
     def _download(self) -> None:

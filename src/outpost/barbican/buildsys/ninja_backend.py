@@ -139,7 +139,7 @@ class NinjaGenFile:
         layout: Path,
         package_name: Optional[str] = None,
     ) -> None:
-        implicit_inputs = ["libshield_install.stamp"]
+        implicit_inputs = ["runtime_install.stamp"]
         if name != "dummy":
             implicit_inputs.append(f"{package_name if package_name else name}_install.stamp")
         self._ninja.newline()

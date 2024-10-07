@@ -45,5 +45,9 @@ SCM_FACTORY_DICT = ScmMethodFactoryMap()
 
 
 def scm_create(package: "Package") -> ScmBaseClass:
-    ScmType = SCM_FACTORY_DICT[package.method]
-    return ScmType(package)
+    if len(package.scm.items()) != 1:
+        # TODO raise Barbican.ConfigurationError
+        raise ValueError
+    scm_name, config_node = list(package.scm.items())[0]
+    ScmCls = SCM_FACTORY_DICT[scm_name]
+    return ScmCls(package, config_node)

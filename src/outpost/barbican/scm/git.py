@@ -82,8 +82,8 @@ class GitProgressBar(RemoteProgress):
 
 
 class Git(ScmBaseClass):
-    def __init__(self, package: "Package") -> None:
-        super().__init__(package)
+    def __init__(self, package: "Package", config: dict) -> None:
+        super().__init__(package, config)
         self._repo: Repo
         try:
             self._repo = Repo(package.src_dir)

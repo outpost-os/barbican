@@ -5,9 +5,10 @@
 from pathlib import Path
 import subprocess
 from functools import lru_cache
+from enum import auto, unique
 
 from ..scm import scm_create
-from ..utils import working_directory_attr
+from ..utils import working_directory_attr, StrEnum
 
 import typing as T
 
@@ -16,19 +17,43 @@ if T.TYPE_CHECKING:
 
 
 class Package:
+    @unique
+    class Type(StrEnum):
+        """Package type enumerate."""
+
+        Kernel = auto()
+        """Package is the kernel (a.k.a. Sentry)"""
+
+        Runtime = auto()
+        """Package is the runtime library for a given language (e.g. libshield, shield-rs)"""
+
+        Library = auto()
+        """Package is a system wide library (other than runtime)"""
+
+        Service = auto()
+        """Package is a system service"""
+
+        Application = auto()
+        """Package is an user application"""
+
     def __init__(
-        self, name: str, parent_project: "Project", config_node: dict, is_app: bool = False
+        self,
+        name: str,
+        parent_project: "Project",
+        config_node: dict,
+        type: "Package.Type",  # type: ignore[arg-type]
     ) -> None:
         self._name = name
+        self._type: Package.Type = type
         self._parent = parent_project
         self._config = config_node
         self._scm = scm_create(self)
-        # True if package is an user app, False if sys package
-        self._is_app = is_app
 
-        self._exelist: list[str] = (
-            self._config["exelist"] if "exelist" in self._config.keys() else []
-        )
+        self._provides: list[str]
+        if self._type == Package.Type.Kernel:
+            self._provides = ["idle.elf", "sentry-kernel.elf"]
+        else:
+            self._provides = self._config["provides"] if "provides" in self._config.keys() else []
 
         self._dts_include_dirs = [Path(self.src_dir) / "dts"]
         if "extra_dts_incdir" in self._config:
@@ -37,7 +62,7 @@ class Package:
                 [Path(self.src_dir) / d for d in self._config["extra_dts_incdir"]]
             )
 
-        dotconfig = Path(self._config["config_file"])
+        dotconfig = Path(self._config["config"])
         if dotconfig.is_absolute():
             # XXX proper execpetion handling
             raise Exception("config file must be project top level relative file")
@@ -50,12 +75,20 @@ class Package:
         return self._name
 
     @property
-    def is_app_package(self) -> bool:
-        return self._is_app
+    def is_application(self) -> bool:
+        return self._type == Package.Type.Application
+
+    @property
+    def is_kernel(self) -> bool:
+        return self._type == Package.Type.Kernel
+
+    @property
+    def is_runtime(self) -> bool:
+        return self._type == Package.Type.Runtime
 
     @property
     def is_sys_package(self) -> bool:
-        return not self._is_app
+        return self.is_kernel or self.is_runtime
 
     @property
     @lru_cache
@@ -93,17 +126,17 @@ class Package:
         return self._parent.path.sysroot_data_dir / self.name.replace("lib", "", 1)
 
     @property
-    def built_exelist(self) -> list[Path]:
-        return [Path(self.build_dir) / exe for exe in self._exelist]
+    def built_targets(self) -> list[Path]:
+        return [Path(self.build_dir) / exe for exe in self._provides]
 
     @property
-    def installed_exelist(self) -> list[Path]:
-        return [Path(self.bin_dir) / exe for exe in self._exelist]
+    def installed_targets(self) -> list[Path]:
+        return [Path(self.bin_dir) / exe for exe in self._provides]
 
     @property
-    def dummy_linked_exelist(self) -> list[Path]:
+    def dummy_linked_targets(self) -> list[Path]:
         dummy_list = []
-        for exe in self._exelist:
+        for exe in self._provides:
             exe_path = self._parent.path.private_build_dir / exe
             new_suffix = ".dummy" + exe_path.suffix
             dummy_list.append(exe_path.with_suffix(new_suffix))
@@ -111,8 +144,8 @@ class Package:
         return dummy_list
 
     @property
-    def relocated_exelist(self) -> list[Path]:
-        return [Path(self._parent.path.private_build_dir) / exe for exe in self._exelist]
+    def relocated_targets(self) -> list[Path]:
+        return [Path(self._parent.path.private_build_dir) / exe for exe in self._provides]
 
     @property
     def dts_include_dirs(self) -> list[Path]:
@@ -124,8 +157,15 @@ class Package:
 
     @property
     def deps(self):
-        # XXX sanity checks
-        return self._config["deps"] if "deps" in self._config else list()
+        if self._type == Package.Type.Kernel:
+            return []
+        elif self._type == Package.Type.Runtime:
+            return [Package.Type.Kernel.value]
+        else:
+            deps = [Package.Type.Runtime.value]
+            if "depends" in self._config:
+                deps.extend(self._config["depends"])
+            return deps
 
     @property
     def build_opts(self):
