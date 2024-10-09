@@ -20,7 +20,9 @@ import typing as T
 from .console import console
 from .logger import logger, log_config
 from . import config
-from .package import Package
+from .package import Package, create_package
+from .package.meson import Meson
+
 from .buildsys import ninja_backend
 from .utils import pathhelper
 
@@ -56,13 +58,13 @@ class Project:
 
         # Instantiate Sentry kernel
         self._packages.append(
-            Package(
+            Meson(
                 "kernel", self, self._toml["kernel"], Package.Type.Kernel  # type: ignore[arg-type]
             )
         )
         # Instantiate libshield
         self._packages.append(
-            Package(
+            Meson(
                 "runtime",
                 self,
                 self._toml["runtime"],
@@ -74,7 +76,7 @@ class Project:
             self._noapp = False
             for app, node in self._toml["application"].items():
                 self._packages.append(
-                    Package(app, self, node, Package.Type.Application)  # type: ignore[arg-type]
+                    create_package(app, self, node, Package.Type.Application)  # type: ignore[arg-type]
                 )
         else:
             self._noapp = True

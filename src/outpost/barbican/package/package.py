@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from abc import ABC, abstractmethod
+import collections.abc
 from pathlib import Path
 import subprocess
 from functools import lru_cache
@@ -16,7 +18,36 @@ if T.TYPE_CHECKING:
     from ..barbican import Project
 
 
+@unique
+class Backend(StrEnum):
+    Cargo = auto()
+    Meson = auto()
+
+
+class BackendFactoryMap(collections.abc.Mapping[Backend, collections.abc.Callable]):
+    def __init__(self) -> None:
+        self._key_type = Backend
+
+    def __len__(self):
+        return len(self._key_type)
+
+    def __iter__(self):
+        yield from [k.value for k in list(self._key_type)]
+
+    def __getitem__(self, key):
+        method = self._key_type(key)
+
+        from importlib import import_module
+        import sys
+
+        return getattr(
+            import_module("." + method.value, sys.modules[__name__].__package__), method.name
+        )
+
+
 class Package:
+    __backend_factories: T.ClassVar[BackendFactoryMap] = BackendFactoryMap()
+
     @unique
     class Type(StrEnum):
         """Package type enumerate."""
@@ -89,6 +120,10 @@ class Package:
     @property
     def is_sys_package(self) -> bool:
         return self.is_kernel or self.is_runtime
+
+    @property
+    def backend(self) -> Backend:
+        return Backend(self.__class__.__name__.lower())
 
     @property
     @lru_cache
@@ -176,6 +211,10 @@ class Package:
         build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
         return build_opts
 
+    @classmethod
+    def get_backend_factory(cls, backend: str) -> T.Type["Package"]:
+        return cls.__backend_factories[Backend(backend)]
+
     def download(self) -> None:
         self._scm.download()
 
@@ -193,3 +232,10 @@ class Package:
     def post_update_hook(self):
         subprocess.run(["meson", "subprojects", "download"], capture_output=True)
         subprocess.run(["meson", "subprojects", "update"], capture_output=True)
+
+
+def create_package(
+    name: str, parent_project: "Project", config_node: dict, type: Package.Type
+) -> Package:
+    PackageCls = Package.get_backend_factory(config_node["build"]["backend"])
+    return PackageCls(name, parent_project, config_node, type)
