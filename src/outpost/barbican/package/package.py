@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 import collections.abc
 from pathlib import Path
-import subprocess
+
 from functools import lru_cache
 from enum import auto, unique
 
@@ -45,7 +45,7 @@ class BackendFactoryMap(collections.abc.Mapping[Backend, collections.abc.Callabl
         )
 
 
-class Package:
+class Package(ABC):
     __backend_factories: T.ClassVar[BackendFactoryMap] = BackendFactoryMap()
 
     @unique
@@ -202,36 +202,33 @@ class Package:
                 deps.extend(self._config["depends"])
             return deps
 
-    @property
-    def build_opts(self):
-        build_opts = list()
-        build_opts.append("--pkgconfig.relocatable")
-        build_opts.append(f"--pkg-config-path={self.pkgconfig_dir}")
-        build_opts.append(f"-Dconfig={str(self._dotconfig)}")
-        build_opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
-        return build_opts
-
     @classmethod
     def get_backend_factory(cls, backend: str) -> T.Type["Package"]:
         return cls.__backend_factories[Backend(backend)]
 
     def download(self) -> None:
         self._scm.download()
+        # TODO: remove circular deps between scm and Package
+        # run hook from package instead
+        # self.post_download_hook()
 
     def update(self) -> None:
         self._scm.update()
+        # TODO: remove circular deps between scm and Package
+        # self.post_update_hook()
 
     def __getattr__(self, attr):
         return self._config[attr] if attr in self._config else None
 
-    @working_directory_attr("src_dir")
-    def post_download_hook(self):
-        subprocess.run(["meson", "subprojects", "download"], capture_output=True)
+    @property
+    @abstractmethod
+    def build_options(self) -> list[str]: ...
 
-    @working_directory_attr("src_dir")
-    def post_update_hook(self):
-        subprocess.run(["meson", "subprojects", "download"], capture_output=True)
-        subprocess.run(["meson", "subprojects", "update"], capture_output=True)
+    @abstractmethod
+    def post_download_hook(self) -> None: ...
+
+    @abstractmethod
+    def post_update_hook(self) -> None: ...
 
 
 def create_package(

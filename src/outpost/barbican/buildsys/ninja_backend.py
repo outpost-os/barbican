@@ -280,7 +280,7 @@ class NinjaGenFile:
                 "builddir": package.build_dir,
                 "sourcedir": package.src_dir,
                 "name": package.name,
-                "opts": package.build_opts,
+                "opts": package.build_options,
             },
             order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )

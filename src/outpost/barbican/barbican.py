@@ -116,7 +116,8 @@ class Project:
 
         # Add setup/compile/install targets for meson packages
         for p in self._packages:
-            ninja.add_meson_package(p)
+            if isinstance(p, Meson):
+                ninja.add_meson_package(p)
 
         if self._noapp:
             ninja.close()
