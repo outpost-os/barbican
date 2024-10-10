@@ -58,9 +58,7 @@ class Project:
 
         # Instantiate Sentry kernel
         self._packages.append(
-            Meson(
-                "kernel", self, self._toml["kernel"], Package.Type.Kernel  # type: ignore[arg-type]
-            )
+            Meson("kernel", self, self._toml["kernel"], Package.Type.Kernel)  # type: ignore
         )
         # Instantiate libshield
         self._packages.append(
@@ -76,7 +74,7 @@ class Project:
             self._noapp = False
             for app, node in self._toml["application"].items():
                 self._packages.append(
-                    create_package(app, self, node, Package.Type.Application)  # type: ignore[arg-type]
+                    create_package(app, self, node, Package.Type.Application)  # type: ignore
                 )
         else:
             self._noapp = True

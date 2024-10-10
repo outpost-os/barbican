@@ -9,8 +9,10 @@ from pathlib import Path
 from functools import lru_cache
 from enum import auto, unique
 
+from ..console import console
+from ..logger import logger
 from ..scm import scm_create
-from ..utils import working_directory_attr, StrEnum
+from ..utils import StrEnum
 
 import typing as T
 
@@ -78,7 +80,7 @@ class Package(ABC):
         self._type: Package.Type = type
         self._parent = parent_project
         self._config = config_node
-        self._scm = scm_create(self)
+        self._scm = scm_create(name, parent_project.path.src_dir, self._config)
 
         self._provides: list[str]
         if self._type == Package.Type.Kernel:
@@ -207,15 +209,22 @@ class Package(ABC):
         return cls.__backend_factories[Backend(backend)]
 
     def download(self) -> None:
+        logger.info(f"Downloading {self.name} from {self.url}")
+        self.src_dir.mkdir(parents=True, exist_ok=True)
         self._scm.download()
-        # TODO: remove circular deps between scm and Package
-        # run hook from package instead
-        # self.post_download_hook()
+
+        # TODO post download trigger in config
+        with console.status(f"Running {self.backend.name} post download hook"):
+            self.post_download_hook()
+        console.message("[b]Done.[/b]")
 
     def update(self) -> None:
+        logger.info(f"Updating {self.name}")
         self._scm.update()
-        # TODO: remove circular deps between scm and Package
-        # self.post_update_hook()
+
+        # TODO post udpate trigger in config
+        with console.status(f"Running {self.backend.name} post update hook"):
+            self.post_update_hook()
 
     def __getattr__(self, attr):
         return self._config[attr] if attr in self._config else None

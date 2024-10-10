@@ -7,6 +7,7 @@ import subprocess
 from .package import Package
 from ..utils import working_directory_attr
 
+
 class Meson(Package):
     def __init__(self, name: str, parent_project, config_node: dict, type):
         super().__init__(name, parent_project, config_node, type)

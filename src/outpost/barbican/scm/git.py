@@ -9,10 +9,7 @@ from ..logger import logger
 
 from .scm import ScmBaseClass
 
-from typing import TYPE_CHECKING, Optional, cast
-
-if TYPE_CHECKING:
-    from ..package import Package
+from typing import Optional, cast
 
 from ..console import console
 
@@ -82,11 +79,11 @@ class GitProgressBar(RemoteProgress):
 
 
 class Git(ScmBaseClass):
-    def __init__(self, package: "Package", config: dict) -> None:
-        super().__init__(package, config)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._repo: Repo
         try:
-            self._repo = Repo(package.src_dir)
+            self._repo = Repo(self.sourcedir)
         except NoSuchPathError:
             logger.debug(f"{self.name} not cloned yet")
         except InvalidGitRepositoryError:
@@ -145,7 +142,7 @@ class Git(ScmBaseClass):
         if self.is_hex_sha(self.revision):
             self._repo = Repo.clone_from(
                 url=self.url,
-                to_path=self.name,
+                to_path=self.sourcedir,
                 progress=GitProgressBar(),  # type: ignore
                 no_checkout=True,
             )
@@ -153,7 +150,7 @@ class Git(ScmBaseClass):
         else:
             self._repo = Repo.clone_from(
                 url=self.url,
-                to_path=self.name,
+                to_path=self.sourcedir,
                 progress=GitProgressBar(),  # type: ignore
                 branch=self.revision,
                 single_branch=True,
@@ -185,7 +182,7 @@ class Git(ScmBaseClass):
         logger.info(f"git clean {self.name}")
         self._repo.git.clean(["-ffdx"])
 
-    def _download(self) -> None:
+    def download(self) -> None:
         if hasattr(self, "_repo"):
             console.message(f"[b]{self.name} already clone, skip[/b]")
             return
@@ -194,11 +191,8 @@ class Git(ScmBaseClass):
             f"[b]Cloning git repository [i]{self.name}[/i] (revision={self.revision})...[/b]"
         )
         self.clone()
-        with console.status("Running post clone hook"):
-            self._package.post_download_hook()
-        console.message("[b]Done.[/b]")
 
-    def _update(self) -> None:
+    def update(self) -> None:
         if self._repo.is_dirty():
             console.warning(f"{self.name} is dirty, cannot update")
             return
@@ -215,6 +209,3 @@ class Git(ScmBaseClass):
             console.message("[b]Already up-to-date[/b]")
         else:
             console.message(f"[b][i]{self.name}[/i] updated {old_ref}→ {new_ref}[/b]")
-
-        with console.status("Running post update hook"):
-            self._package.post_update_hook()

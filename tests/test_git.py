@@ -67,33 +67,16 @@ class GitTestBase:
         return default_branch
 
 
-class GitTestProjectMock:
-    class _Parent:
-        class _Path:
-            def __init__(self, src_dir):
-                self.src_dir = src_dir
-
-        def __init__(self, src_dir):
-            self.path = GitTestProjectMock._Parent._Path(src_dir)
-
-    def __init__(self, path, name, uri, revision):
-        self.name = name
-        self.scm = {
+def git_test_create(path, name, uri, revision):
+    config = {
+        "scm": {
             "git": {
                 "uri": uri,
                 "revision": revision,
             }
         }
-        self.src_dir = path / name
-        self.parent = GitTestProjectMock._Parent(path)
-
-    def post_update_hook(self): ...
-    def post_download_hook(self): ...
-
-
-def git_test_create(path, name, uri, revision):
-    prj_mock = GitTestProjectMock(path, name, uri, revision)
-    repo = scm_create(prj_mock)
+    }
+    repo = scm_create(name, path, config)
     assert isinstance(repo, Git)
     return repo
 
