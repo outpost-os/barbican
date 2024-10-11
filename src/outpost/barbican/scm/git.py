@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from git import Repo, RemoteProgress
+from git import Repo, RemoteProgress, FetchInfo
 from git.exc import InvalidGitRepositoryError, NoSuchPathError
 
 from ..logger import logger
@@ -160,9 +160,20 @@ class Git(ScmBaseClass):
     def fetch(self) -> None:
         logger.info(f"git fetch {self.name} origin/{self.revision}")
 
-        fetch_infos = self._repo.remotes.origin.fetch(
-            refspec=self.revision, progress=GitProgressBar()
-        )  # type: ignore
+        refspec = self.revision
+        if not self.is_hex_sha(self.revision):
+            # As we cloned in single branch, on update, one may change to a not
+            # fetched yet reference. Git need to bound this ref in local repo w/
+            # same name, so fetch w/ refspec=<rev>:<rev>
+            is_new_ref = True
+            for ref in self._repo.heads:
+                if self.revision in ref.name:
+                    is_new_ref = False
+                    break
+            if is_new_ref:
+                refspec += ":" + refspec
+
+        fetch_infos = self._repo.remote().fetch(refspec=refspec)
 
         # this should never occurs
         if len(fetch_infos) != 1:
@@ -175,8 +186,14 @@ class Git(ScmBaseClass):
         else:
             if self._repo.head.is_detached or self._repo.active_branch != self.revision:
                 self._repo.git.switch(self.revision)
-            self._reset_head(str(fetch_info.commit))
-            self._reset(str(fetch_info.commit))
+
+            # XXX:
+            # If a new Head is fetched, switch on new ref is sufficient
+            # Moreover, fetch info does not have any commit reference yet
+            # the the following will fail. Thus, skip this step in this case.
+            if not fetch_info.flags & FetchInfo.NEW_HEAD:
+                self._reset_head(str(fetch_info.commit))
+                self._reset(str(fetch_info.commit))
 
     def clean(self) -> None:
         logger.info(f"git clean {self.name}")
