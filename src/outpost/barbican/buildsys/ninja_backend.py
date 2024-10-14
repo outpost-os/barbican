@@ -271,6 +271,51 @@ class NinjaGenFile:
             "touch $out",
         )
 
+    def add_cargo_rules(self) -> None:
+        self._ninja.newline()
+        self._ninja.variable("cargo", find_program("cargo"))
+        self._ninja.newline()
+        self._ninja.rule(
+            "cargo_compile",
+            description="cargo compile $name",
+            pool="console",
+            command="$cargo build -Z unstable-options --manifest-path=$sourcedir/Cargo.toml --target-dir=$builddir --out-dir=$builddir && touch $out",
+        )
+        self._ninja.newline()
+        self._ninja.rule(
+            "cargo_install",
+            description="cargo install $name",
+            pool="console",
+            command="touch $out",
+        )
+
+    def add_cargo_package(self, package: "Package") -> None:
+        self._ninja.newline()
+        self._ninja.build(
+            f"{package.name}_compile.stamp",
+            "cargo_compile",
+            variables={
+                "sourcedir": package.src_dir,
+                "builddir": package.build_dir,
+                "name": package.name,
+            },
+        )
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
+        self._ninja.newline()
+        self._ninja.build(
+            f"{package.name}_install.stamp",
+            "cargo_install",
+            variables={
+                "builddir": package.build_dir,
+                "name": package.name,
+            },
+            implicit=f"{package.name}_compile",
+        )
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_install", "phony", f"{package.name}_install.stamp")
+        self._ninja.newline()
+
     def add_meson_package(self, package: "Package") -> None:
         self._ninja.newline()
         self._ninja.build(

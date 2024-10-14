@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .package import Package, create_package
+from .package import Package, Backend, create_package
 
-__all__ = ["Package", "create_package"]
+__all__ = ["Package", "Backend", "create_package"]

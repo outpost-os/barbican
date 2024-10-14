@@ -20,8 +20,9 @@ import typing as T
 from .console import console
 from .logger import logger, log_config
 from . import config
-from .package import Package, create_package
+from .package import Package, create_package, Backend
 from .package.meson import Meson
+from .package.cargo import Cargo
 
 from .buildsys import ninja_backend
 from .utils import pathhelper
@@ -111,11 +112,14 @@ class Project:
         )
 
         ninja.add_meson_rules()
+        ninja.add_cargo_rules()
 
         # Add setup/compile/install targets for meson packages
         for p in self._packages:
             if isinstance(p, Meson):
                 ninja.add_meson_package(p)
+            elif isinstance(p, Cargo):
+                ninja.add_cargo_package(p)
 
         if self._noapp:
             ninja.close()
@@ -139,7 +143,7 @@ class Project:
 
         # Dummy link, for non pic application
         for package in self._packages:
-            if package.is_application:
+            if package.is_application and package.backend == Backend.Meson:
                 ninja.add_relink_meson_target(
                     package.name,
                     package.installed_targets[0],
@@ -152,7 +156,7 @@ class Project:
         for package in self._packages:
             if package.is_sys_package:
                 layout_sys_exelist.extend(package.installed_targets)
-            else:
+            elif package.backend == Backend.Meson:
                 layout_app_exelist.extend(package.dummy_linked_targets)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
@@ -170,7 +174,7 @@ class Project:
 
         # gen_ld/relink/gen_meta/objcopy app(s)
         for package in self._packages:
-            if package.is_application:
+            if package.is_application and package.backend == Backend.Meson:
                 # XXX: Handle multiple exe package
                 elf_in = package.installed_targets[0]
                 elf_out = package.relocated_targets[0]
