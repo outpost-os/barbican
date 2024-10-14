@@ -279,7 +279,8 @@ class NinjaGenFile:
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="$cargo build -Z unstable-options --manifest-path=$sourcedir/Cargo.toml --target-dir=$builddir --out-dir=$builddir && touch $out",
+            command="$cargo build -Z unstable-options --manifest-path=$sourcedir/Cargo.toml "
+            "--target-dir=$builddir --out-dir=$builddir && touch $out",
         )
         self._ninja.newline()
         self._ninja.rule(
@@ -305,13 +306,15 @@ class NinjaGenFile:
         self._ninja.newline()
         self._ninja.build(
             f"{package.name}_install.stamp",
-            "cargo_install",
-            variables={
-                "builddir": package.build_dir,
-                "name": package.name,
-            },
+            "internal",
             implicit=f"{package.name}_compile",
+            variables={
+                "cmd": "install",
+                "args": f"--suffix=.elf {str(package.build_dir)} " + " ".join((str(t) for t in package.installed_targets)),
+                "description": f"cargo install {package.name}",
+            },
         )
+
         self._ninja.newline()
         self._ninja.build(f"{package.name}_install", "phony", f"{package.name}_install.stamp")
         self._ninja.newline()
