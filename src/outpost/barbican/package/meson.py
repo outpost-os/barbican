@@ -18,7 +18,7 @@ class Meson(Package):
         opts.append("--pkgconfig.relocatable")
         opts.append(f"--pkg-config-path={self.pkgconfig_dir}")
         opts.append(f"-Dconfig={str(self._dotconfig)}")
-        opts.append(self._config["build_opts"] if "build_opts" in self._config else list())
+        opts.extend(self._config["build_opts"] if "build_opts" in self._config else list())
         return opts
 
     @working_directory_attr("src_dir")

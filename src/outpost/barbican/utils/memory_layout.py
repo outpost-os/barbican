@@ -36,12 +36,13 @@ class Region:
     def __post_init__(self) -> None:
         for f in fields(self):
             value = getattr(self, f.name)
-            if f.type is int and isinstance(value, str):
+            value_type = T.cast(type, f.type)
+            if value_type is int and isinstance(value, str):
                 object.__setattr__(self, f.name, int(value, 16))
-            elif f.type is T.List["Region"] and all(isinstance(e, dict) for e in value):
+            elif value_type is T.List["Region"] and all(isinstance(e, dict) for e in value):
                 object.__setattr__(self, f.name, [Region(**e) for e in value])
-            elif issubclass(f.type, Enum):
-                object.__setattr__(self, f.name, f.type(value))
+            elif issubclass(value_type, Enum):
+                object.__setattr__(self, f.name, value_type(value))
 
     @staticmethod
     def dict_factory(x):
