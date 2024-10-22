@@ -310,7 +310,8 @@ class NinjaGenFile:
             implicit=f"{package.name}_compile",
             variables={
                 "cmd": "install",
-                "args": f"--suffix=.elf {str(package.build_dir)} " + " ".join((str(t) for t in package.installed_targets)),
+                "args": f"--suffix=.elf {str(package.build_dir)} "
+                + " ".join((str(t) for t in package.installed_targets)),  # noqa: W503
                 "description": f"cargo install {package.name}",
             },
         )

@@ -10,7 +10,7 @@ import typing as T
 from ..console import console
 
 
-def run_install(from_dir: Path, files: list[Path], suffix: T.Optional[str]):
+def run_install(from_dir: Path, files: list[Path], suffix: str = ""):
     for f in files:
         src = (from_dir / f.name).resolve(strict=True)
         dest = f.with_suffix(suffix)
@@ -20,7 +20,14 @@ def run_install(from_dir: Path, files: list[Path], suffix: T.Optional[str]):
 
 def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
-    parser.add_argument("-s", "--suffix", action="store", type=str, default="", help="suffix to append to the installed file(s)")
+    parser.add_argument(
+        "-s",
+        "--suffix",
+        action="store",
+        type=str,
+        default="",
+        help="suffix to append to the installed file(s)",
+    )
     parser.add_argument("from_dir", type=Path, help="directory from where files are installed")
     parser.add_argument("files", nargs=REMAINDER, type=Path, help="file(s) install destination")
 
