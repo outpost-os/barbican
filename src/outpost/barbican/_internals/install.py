@@ -14,6 +14,8 @@ def run_install(from_dir: Path, files: list[Path], suffix: str = ""):
     for f in files:
         src = (from_dir / f.name).resolve(strict=True)
         dest = f.with_suffix(suffix)
+        if not dest.parent.exists():
+            dest.parent.mkdir(parents=True, exist_ok=True)
         console.message(f"Installing [i]{str(src)}[/i]→ [i]{str(dest)}[/i]")
         shutil.copy2(src, dest)
 
