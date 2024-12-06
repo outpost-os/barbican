@@ -8,12 +8,31 @@ from pathlib import Path
 from jinja2 import Environment, BaseLoader
 
 from .package import Package
-from ..utils.environment import ExeWrapper
+from ..utils.environment import ExeWrapper, find_program
+
+import json
+
+
+class Metadata:
+    def __init__(self, manifest_path: Path) -> None:
+        self._cargo = ExeWrapper("cargo", capture_out=True)
+        self._metadata = json.loads(
+            self._cargo.metadata(
+                manifest_path=str(manifest_path.resolve(strict=True)),
+                format_version=1,
+            )
+        )
+
+    def package_version(self, name: str) -> str | None:
+        p = list(filter(lambda x: x["name"] == name, self._metadata["packages"]))
+        return None if len(p) != 1 else p[0]["version"]
 
 
 class LocalRegistry:
     def __init__(self, path: Path) -> None:
         self._path = path
+        # Check for cargo extension cargo-index (but wrapp call as cargo subcommand)
+        find_program("cargo-index")
         self._cargo = ExeWrapper("cargo")
 
     @property
@@ -49,6 +68,7 @@ class LocalRegistry:
             index=str(self.index),
             index_url=self.path.as_uri(),
             upload=str(self.path),
+            force=True,
             extra_opts={"no-verify": no_verify},
         )
 
