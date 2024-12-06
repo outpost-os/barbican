@@ -10,6 +10,7 @@ Welcome to barbican documentation!
    :caption: Contents:
 
    gettingstarted.rst
+   howto.rst
    commands/barbican.rst
    commands/internals.rst
    reference_manual/index.rst

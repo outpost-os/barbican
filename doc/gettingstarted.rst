@@ -1,3 +1,5 @@
+.. _getting-barbican:
+
 Getting Barbican
 ================
 
@@ -16,6 +18,7 @@ virtualenv).
     pip install [--user] outpost-barbican
 
 .. note::
+
     Do not install for user in a virtualenv.
 
 .. tip::
