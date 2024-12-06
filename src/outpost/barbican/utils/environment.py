@@ -60,7 +60,7 @@ class ExeWrapper:
     >>> meson.setup(cross_file="Path/to/crossfile", args=["path/to/builddir"])
     """
 
-    def __init__(self, name: str, path: T.Optional[Path] = None) -> None:
+    def __init__(self, name: str, path: T.Optional[Path] = None, capture_out: bool = False) -> None:
         """Initialize a ExeWrapper instance.
 
         Parameters
@@ -69,8 +69,11 @@ class ExeWrapper:
             Program name to wrap
         path: T.Optional[Path]
             Search path for executable, optional.
+        capture_out: bool
+            Capture stdout as str (system default encoding) if True, False by default.
         """
         self.exe = find_program(name, path)
+        self._capture_out = capture_out
 
     def __getattr__(self, name):
         return lambda *args, **kwargs: self._execute(name, *args, **kwargs)
@@ -87,7 +90,7 @@ class ExeWrapper:
         extra_opts: dict = dict(),
         extra_args: list[str] = list(),
         **kwargs,
-    ) -> None:
+    ) -> str | None:
         """Forge command line and execute.
 
         The forged command line is the following:
@@ -127,6 +130,11 @@ class ExeWrapper:
         -------
         Underscores are translate to dashes in options name. By convention, dash are used as
         separator.
+
+        Returns
+        -------
+        str | None
+            captured stdout as string or None if capture_out is false
         """
 
         def to_options_list(**kwargs) -> list[str]:
@@ -150,4 +158,11 @@ class ExeWrapper:
         if len(extra_opts):
             cmdline.extend(to_options_list(**extra_opts))
         logger.debug(cmdline)
-        run(cmdline, check=True)
+        result = run(
+            cmdline,
+            check=True,
+            capture_output=self._capture_out,
+            text=self._capture_out,
+        )
+
+        return result.stdout
