@@ -4,15 +4,9 @@
 
 from enum import auto, unique
 import collections.abc
+from pathlib import Path
 from .scm import ScmBaseClass
 from ..utils import StrEnum
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..package import Package
-
-__all__ = ["Git"]
 
 
 @unique
@@ -44,6 +38,10 @@ class ScmMethodFactoryMap(collections.abc.Mapping[ScmMethodEnum, collections.abc
 SCM_FACTORY_DICT = ScmMethodFactoryMap()
 
 
-def scm_create(package: "Package") -> ScmBaseClass:
-    ScmType = SCM_FACTORY_DICT[package.method]
-    return ScmType(package)
+def scm_create(name: str, src_dir: Path, config: dict) -> ScmBaseClass:
+    if len(config["scm"].items()) != 1:
+        # TODO raise Barbican.ConfigurationError
+        raise ValueError
+    scm_name, scm_config = list(config["scm"].items())[0]
+    ScmCls = SCM_FACTORY_DICT[scm_name]
+    return ScmCls(name, src_dir, scm_config)

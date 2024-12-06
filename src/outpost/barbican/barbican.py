@@ -20,7 +20,10 @@ import typing as T
 from .console import console
 from .logger import logger, log_config
 from . import config
-from .package import Package
+from .package import Package, create_package, Backend
+from .package.meson import Meson
+from .package.cargo import Cargo
+
 from .buildsys import ninja_backend
 from .utils import pathhelper
 
@@ -55,14 +58,25 @@ class Project:
         # This will be, likely, false for next devel step.
 
         # Instantiate Sentry kernel
-        self._packages.append(Package("sentry", self, self._toml["sentry"]))
+        self._packages.append(
+            Meson("kernel", self, self._toml["kernel"], Package.Type.Kernel)  # type: ignore
+        )
         # Instantiate libshield
-        self._packages.append(Package("libshield", self, self._toml["libshield"]))
+        self._packages.append(
+            Meson(
+                "runtime",
+                self,
+                self._toml["runtime"],
+                Package.Type.Runtime,  # type: ignore[arg-type]
+            )
+        )
 
-        if "app" in self._toml:
+        if "application" in self._toml:
             self._noapp = False
-            for app, node in self._toml["app"].items():
-                self._packages.append(Package(app, self, node, is_app=True))
+            for app, node in self._toml["application"].items():
+                self._packages.append(
+                    create_package(app, self, node, Package.Type.Application)  # type: ignore
+                )
         else:
             self._noapp = True
 
@@ -98,10 +112,14 @@ class Project:
         )
 
         ninja.add_meson_rules()
+        ninja.add_cargo_rules()
 
         # Add setup/compile/install targets for meson packages
         for p in self._packages:
-            ninja.add_meson_package(p)
+            if isinstance(p, Meson):
+                ninja.add_meson_package(p)
+            elif isinstance(p, Cargo):
+                ninja.add_cargo_package(p)
 
         if self._noapp:
             ninja.close()
@@ -114,29 +132,32 @@ class Project:
 
         # linkerscript template file
         # XXX: hardcoded in early steps
-        linker_script_template = pathlib.Path(self._packages[1].data_dir) / "linkerscript.ld.in"
+        linker_script_template = (
+            pathlib.Path(self.path.sysroot_data_dir) / "shield" / "linkerscript.ld.in"
+        )
 
         dummy_linker_script = pathlib.Path(self.path.private_build_dir, "dummy.lds")
         ninja.add_gen_ldscript_target(
             "dummy", dummy_linker_script, linker_script_template, pathlib.Path(dummy_layout[0])
         )
 
-        # Dummy link
-        for app in self._packages[2:]:
-            ninja.add_relink_meson_target(
-                app.name,
-                app.installed_exelist[0],
-                app.dummy_linked_exelist[0],
-                dummy_linker_script,
-            )
+        # Dummy link, for non pic application
+        for package in self._packages:
+            if package.is_application and package.backend == Backend.Meson:
+                ninja.add_relink_meson_target(
+                    package.name,
+                    package.installed_targets[0],
+                    package.dummy_linked_targets[0],
+                    dummy_linker_script,
+                )
 
         layout_sys_exelist = []
         layout_app_exelist = []
         for package in self._packages:
             if package.is_sys_package:
-                layout_sys_exelist.extend(package.installed_exelist)
-            else:
-                layout_app_exelist.extend(package.dummy_linked_exelist)
+                layout_sys_exelist.extend(package.installed_targets)
+            elif package.backend == Backend.Meson:
+                layout_app_exelist.extend(package.dummy_linked_targets)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
             output=pathlib.Path(self.path.private_build_dir, "layout.json"),
@@ -153,10 +174,10 @@ class Project:
 
         # gen_ld/relink/gen_meta/objcopy app(s)
         for package in self._packages:
-            if package.is_app_package:
+            if package.is_application and package.backend == Backend.Meson:
                 # XXX: Handle multiple exe package
-                elf_in = package.installed_exelist[0]
-                elf_out = package.relocated_exelist[0]
+                elf_in = package.installed_targets[0]
+                elf_out = package.relocated_targets[0]
                 linker_script = pathlib.Path(self.path.private_build_dir, f"{elf_in.stem}.lds")
                 metadata_out = elf_out.with_suffix(".meta")
                 hex_out = elf_out.with_suffix(".hex")
@@ -185,12 +206,12 @@ class Project:
                 app_metadata.append(metadata_out)
 
         # Patch kernel/objcopy
-        kernel_elf = self._packages[0].installed_exelist[1]
-        kernel_patched_elf = self._packages[0].relocated_exelist[1]
+        kernel_elf = self._packages[0].installed_targets[1]
+        kernel_patched_elf = self._packages[0].relocated_targets[1]
         kernel_hex = kernel_patched_elf.with_suffix(".hex")
-        # idle_elf = self._packages[0].installed_exelist[0]
+        # idle_elf = self._packages[0].installed_targets[0]
         # XXX this is ugly (...)
-        idle_hex = self._packages[0].installed_exelist[0].with_suffix(".hex")
+        idle_hex = self._packages[0].installed_targets[0].with_suffix(".hex")
 
         ninja.add_fixup_kernel_rule(kernel_elf, kernel_patched_elf, app_metadata)
         ninja.add_objcopy_rule(kernel_patched_elf, kernel_hex, "ihex", [], self._packages[0].name)

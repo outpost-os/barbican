@@ -139,7 +139,7 @@ class NinjaGenFile:
         layout: Path,
         package_name: Optional[str] = None,
     ) -> None:
-        implicit_inputs = ["libshield_install.stamp"]
+        implicit_inputs = ["runtime_install.stamp"]
         if name != "dummy":
             implicit_inputs.append(f"{package_name if package_name else name}_install.stamp")
         self._ninja.newline()
@@ -271,6 +271,55 @@ class NinjaGenFile:
             "touch $out",
         )
 
+    def add_cargo_rules(self) -> None:
+        self._ninja.newline()
+        self._ninja.variable("cargo", find_program("cargo"))
+        self._ninja.newline()
+        self._ninja.rule(
+            "cargo_compile",
+            description="cargo compile $name",
+            pool="console",
+            command="$cargo build -Z unstable-options --manifest-path=$sourcedir/Cargo.toml "
+            "--target-dir=$builddir --out-dir=$builddir && touch $out",
+        )
+        self._ninja.newline()
+        self._ninja.rule(
+            "cargo_install",
+            description="cargo install $name",
+            pool="console",
+            command="touch $out",
+        )
+
+    def add_cargo_package(self, package: "Package") -> None:
+        self._ninja.newline()
+        self._ninja.build(
+            f"{package.name}_compile.stamp",
+            "cargo_compile",
+            variables={
+                "sourcedir": package.src_dir,
+                "builddir": package.build_dir,
+                "name": package.name,
+            },
+        )
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
+        self._ninja.newline()
+        self._ninja.build(
+            f"{package.name}_install.stamp",
+            "internal",
+            implicit=f"{package.name}_compile",
+            variables={
+                "cmd": "install",
+                "args": f"--suffix=.elf {str(package.build_dir)} "
+                + " ".join((str(t) for t in package.installed_targets)),  # noqa: W503
+                "description": f"cargo install {package.name}",
+            },
+        )
+
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_install", "phony", f"{package.name}_install.stamp")
+        self._ninja.newline()
+
     def add_meson_package(self, package: "Package") -> None:
         self._ninja.newline()
         self._ninja.build(
@@ -280,7 +329,7 @@ class NinjaGenFile:
                 "builddir": package.build_dir,
                 "sourcedir": package.src_dir,
                 "name": package.name,
-                "opts": package.build_opts,
+                "opts": package.build_options,
             },
             order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )

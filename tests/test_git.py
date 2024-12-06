@@ -11,6 +11,7 @@ from string import ascii_letters
 from git import Repo
 from git.exc import GitCommandError
 
+from outpost.barbican.scm import scm_create
 from outpost.barbican.scm.git import Git
 
 
@@ -66,31 +67,24 @@ class GitTestBase:
         return default_branch
 
 
-class GitTestProjectMock:
-    class _Parent:
-        class _Path:
-            def __init__(self, src_dir):
-                self.src_dir = src_dir
-
-        def __init__(self, src_dir):
-            self.path = GitTestProjectMock._Parent._Path(src_dir)
-
-    def __init__(self, path, name, url, revision):
-        self.url = url
-        self.name = name
-        self.revision = revision
-        self.src_dir = path / name
-        self.parent = GitTestProjectMock._Parent(path)
-
-    def post_update_hook(self): ...
-    def post_download_hook(self): ...
+def git_test_create(path, name, uri, revision):
+    config = {
+        "scm": {
+            "git": {
+                "uri": uri,
+                "revision": revision,
+            }
+        }
+    }
+    repo = scm_create(name, path, config)
+    assert isinstance(repo, Git)
+    return repo
 
 
 class TestGit(GitTestBase):
     @pytest.mark.dependency()
     def test_download_branch_ref(self, private_dir, origin, default_branch):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
-        repo = Git(prj_mock)
+        repo = git_test_create(private_dir, "test", origin.git_dir, default_branch)
         repo.download()
         assert repo._repo.head.commit == origin.head.commit
         self.add_and_commit_random_file(origin)
@@ -98,8 +92,7 @@ class TestGit(GitTestBase):
 
     @pytest.mark.dependency(depends=["TestGit::test_download_branch_ref"])
     def test_update_same_branch(self, private_dir, origin, default_branch):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
-        repo = Git(prj_mock)
+        repo = git_test_create(private_dir, "test", origin.git_dir, default_branch)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
         assert repo._repo.head.commit == origin.head.commit
@@ -108,8 +101,7 @@ class TestGit(GitTestBase):
 
     @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
     def test_update_to_commit(self, private_dir, origin):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, str(origin.head.commit))
-        repo = Git(prj_mock)
+        repo = git_test_create(private_dir, "test", origin.git_dir, str(origin.head.commit))
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
         assert repo._repo.head.commit == origin.head.commit
@@ -118,8 +110,7 @@ class TestGit(GitTestBase):
 
     @pytest.mark.dependency(depends=["TestGit::test_update_same_branch"])
     def test_update_from_commit_to_branch(self, private_dir, origin, default_branch):
-        prj_mock = GitTestProjectMock(private_dir, "test", origin.git_dir, default_branch)
-        repo = Git(prj_mock)
+        repo = git_test_create(private_dir, "test", origin.git_dir, default_branch)
         assert repo._repo.head.commit != origin.head.commit
         repo.update()
         assert repo._repo.head.commit == origin.head.commit
@@ -129,8 +120,7 @@ class TestGit(GitTestBase):
     @pytest.mark.dependency()
     def test_download_commit(self, private_dir, origin):
         commit = origin.head.commit
-        prj_mock = GitTestProjectMock(private_dir, "test_commit", origin.git_dir, str(commit))
-        repo = Git(prj_mock)
+        repo = git_test_create(private_dir, "test_commit", origin.git_dir, str(commit))
         self.add_and_commit_random_file(origin)
         repo.download()
         assert repo._repo.head.commit == commit
@@ -138,16 +128,12 @@ class TestGit(GitTestBase):
 
     def test_download_invalid_ref(self, private_dir, origin):
         with pytest.raises(Exception):
-            prj_mock = GitTestProjectMock(
-                private_dir, "test_invalid_ref", origin.git_dir, "pouette"
-            )
-            repo = Git(prj_mock)
+            repo = git_test_create(private_dir, "test_invalid_ref", origin.git_dir, "pouette")
             repo.download()
 
     def test_download_invalid_commit(self, private_dir, origin):
         with pytest.raises(Exception):
-            prj_mock = GitTestProjectMock(
+            repo = git_test_create(
                 private_dir, "test_invalid_commit", origin.git_dir, str("a" * 40)
             )
-            repo = Git(prj_mock)
             repo.download()
