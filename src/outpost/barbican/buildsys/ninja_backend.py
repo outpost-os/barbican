@@ -279,8 +279,8 @@ class NinjaGenFile:
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="$cargo build -Z unstable-options --manifest-path=$sourcedir/Cargo.toml "
-            "--target-dir=$builddir --out-dir=$builddir && touch $out",
+            command="OUT_DIR=$builddir $cargo build --manifest-path=$sourcedir/Cargo.toml "
+            "--target-dir=$builddir && touch $out",
         )
         self._ninja.newline()
         self._ninja.rule(
