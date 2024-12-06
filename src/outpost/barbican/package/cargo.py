@@ -31,9 +31,15 @@ class LocalRegistry:
     def index(self) -> Path:
         return self._path / "index"
 
+    @property
+    @lru_cache
+    def exists(self) -> bool:
+        return (self.index / ".cargo-index-lock").exists()
+
     def init(self) -> None:
         """Initialize a new cargo registry index."""
-        self._cargo.index(subcmd=["init"], dl=self._path.as_uri(), index=str(self.index))
+        if not self.exists:
+            self._cargo.index(subcmd=["init"], dl=self._path.as_uri(), index=str(self.index))
 
     def add(self, *, manifest: Path, no_verify: bool = True) -> None:
         """Add a new package to registry index."""
