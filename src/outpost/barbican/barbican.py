@@ -21,8 +21,10 @@ from .console import console
 from .logger import logger, log_config
 from . import config
 from .package import Package, create_package, Backend
+from .package.kernel import Kernel
 from .package.meson import Meson
 from .package.cargo import Cargo
+from .package import cargo
 
 from .buildsys import ninja_backend
 from .utils import pathhelper
@@ -58,9 +60,9 @@ class Project:
         # This will be, likely, false for next devel step.
 
         # Instantiate Sentry kernel
-        self._packages.append(
-            Meson("kernel", self, self._toml["kernel"], Package.Type.Kernel)  # type: ignore
-        )
+        self._kernel = Kernel(self, self._toml)
+        self._packages.append(self._kernel._package)
+
         # Instantiate libshield
         self._packages.append(
             Meson(
@@ -95,6 +97,14 @@ class Project:
             p.update()
 
     def setup(self) -> None:
+
+        logger.info("Create Cargo local repository")
+        registry = cargo.LocalRegistry(
+            self.path.sysroot_data_dir / "cargo" / "registry" / "outpost_sdk"
+        )
+        cargo_config = cargo.Config(self.path.build_dir, registry)
+        registry.init()
+        self._kernel.install_crates(registry, cargo_config)
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.path.build_dir, "build.ninja"))
 
