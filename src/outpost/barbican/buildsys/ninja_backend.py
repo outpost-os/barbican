@@ -271,16 +271,20 @@ class NinjaGenFile:
             "touch $out",
         )
 
-    def add_cargo_rules(self) -> None:
+    def add_cargo_rules(self, rustargs: Path) -> None:
         self._ninja.newline()
         self._ninja.variable("cargo", find_program("cargo"))
+        self._ninja.variable("rustargs", str(rustargs.resolve()))
         self._ninja.newline()
         self._ninja.rule(
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="OUT_DIR=$builddir $cargo build --manifest-path=$sourcedir/Cargo.toml "
-            "--target-dir=$builddir && touch $out",
+            command="OUT_DIR=$builddir $cargo rustc"
+            " --manifest-path=$sourcedir/Cargo.toml "
+            " --target-dir=$builddir"
+            " -- @$rustargs"
+            " && touch $out",
         )
         self._ninja.newline()
         self._ninja.rule(
