@@ -11,7 +11,7 @@ from .cargo import LocalRegistry, Metadata, Config
 
 from ..console import console
 from ..logger import logger
-
+from ..utils import working_directory
 
 class Kernel:
     def __init__(self, parent, config: dict) -> None:
@@ -28,15 +28,16 @@ class Kernel:
 
 
     def install_crates(self, registry: LocalRegistry, cargo_config: Config) -> None:
-        for name, manifest in self._cargo_manifests.items():
-            console.message(f"Install [b]{name}[/b] ([i]{str(manifest)}[/i]) to local registry")
-            metadata = Metadata(manifest)
-            version = metadata.package_version(name)
-            if not version:
-                logger.warning(f"{name} version not found, skip")
-                continue
-            registry.add(manifest=manifest)
-            cargo_config.patch_crate_registry(name=name, version=version)
+        with working_directory(self._package.build_dir):
+            for name, manifest in self._cargo_manifests.items():
+                console.message(f"Install [b]{name}[/b] ([i]{str(manifest)}[/i]) to local registry")
+                metadata = Metadata(manifest)
+                version = metadata.package_version(name)
+                if not version:
+                    logger.warning(f"{name} version not found, skip")
+                    continue
+                registry.add(manifest=manifest)
+                cargo_config.patch_crate_registry(name=name, version=version)
 
     @property
     @lru_cache

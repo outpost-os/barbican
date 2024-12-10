@@ -22,6 +22,7 @@ from .logger import logger, log_config
 from . import config
 from .package import Package, create_package, Backend
 from .package.kernel import Kernel
+from .package.runtime import Runtime
 from .package.meson import Meson
 from .package.cargo import Cargo
 from .package import cargo
@@ -64,14 +65,8 @@ class Project:
         self._packages.append(self._kernel._package)
 
         # Instantiate libshield
-        self._packages.append(
-            Meson(
-                "runtime",
-                self,
-                self._toml["runtime"],
-                Package.Type.Runtime,  # type: ignore[arg-type]
-            )
-        )
+        self._runtime = Runtime(self, self._toml)
+        self._packages.append(self._runtime._package)
 
         if "application" in self._toml:
             self._noapp = False
@@ -105,6 +100,7 @@ class Project:
         cargo_config = cargo.Config(self.path.build_dir, registry)
         registry.init()
         self._kernel.install_crates(registry, cargo_config)
+        self._runtime.install_crates(registry, cargo_config)
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.path.build_dir, "build.ninja"))
 
