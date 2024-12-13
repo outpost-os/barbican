@@ -41,51 +41,6 @@ def working_directory(path: Path):
         os.chdir(prev)
 
 
-# class _WorkingDir:
-#     """Helper class for the following decorators.
-
-#     Parameters
-#     ----------
-#     working_dir: str
-#     """
-
-#     def __init__(self, working_dir: str) -> None:
-#         self._prev = os.getcwd()
-#         self._next = working_dir
-
-#     def enter(self) -> None:
-#         logger.debug(f"enterring {self._next} ...")
-#         self._prev = os.getcwd()
-#         os.chdir(self._next)
-
-#     def leave(self) -> None:
-#         os.chdir(self._prev)
-#         logger.debug(f"... leaving {self._next}")
-
-
-# def working_directory(path):
-#     """Change working dir for the decorated function.
-
-#     Enter a new dir and leave after function call the directory is a decorator argument.
-#     """
-
-#     def _working_directory(func):
-#         def wrapper(*args, **kwargs):
-#             try:
-#                 wd = _WorkingDir(path)
-#                 wd.enter()
-#                 ret = func(*args, **kwargs)
-#             except Exception:
-#                 raise
-#             finally:
-#                 wd.leave()
-#             return ret
-
-#         return wrapper
-
-#     return _working_directory
-
-
 def working_directory_attr(attr):
     """Change working dir for the decorated function.
 
@@ -96,7 +51,9 @@ def working_directory_attr(attr):
         def wrapper(self, *args, **kwargs):
             with working_directory(Path(getattr(self, attr))):
                 return func(self, *args, **kwargs)
+
         return wrapper
+
     return _working_directory
 
 
