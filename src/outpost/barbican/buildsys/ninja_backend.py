@@ -304,6 +304,7 @@ class NinjaGenFile:
                 "builddir": package.build_dir,
                 "name": package.name,
             },
+            order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )
         self._ninja.newline()
         self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
