@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import shutil
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -10,8 +13,6 @@ from jinja2 import Environment, BaseLoader
 from .package import Package
 from ..utils.environment import ExeWrapper, find_program
 
-import json
-
 
 class Metadata:
     def __init__(self, manifest_path: Path) -> None:
@@ -19,6 +20,8 @@ class Metadata:
         self._metadata = json.loads(
             self._cargo.metadata(
                 manifest_path=str(manifest_path.resolve(strict=True)),
+                no_deps=True,
+                quiet=True,
                 format_version=1,
             )
         )
@@ -58,18 +61,21 @@ class LocalRegistry:
     def init(self) -> None:
         """Initialize a new cargo registry index."""
         if not self.exists:
+            if self.index.exists():
+                shutil.rmtree(self.index)
             self._cargo.index(subcmd=["init"], dl=self._path.as_uri(), index=str(self.index))
 
-    def add(self, *, manifest: Path, no_verify: bool = True) -> None:
-        """Add a new package to registry index."""
+    def publish(self, *, name: str, version: str, manifest: Path, target_dir: Path) -> None:
+        """Package a new cate and push to local registry index."""
+        crate_filename = f"{name}-{version}.crate"
+        self._cargo.package(manifest_path=str(manifest), target_dir=str(target_dir), no_verify=True)
         self._cargo.index(
             subcmd=["add"],
-            manifest_path=str(manifest.resolve(strict=True)),
+            crate=str(target_dir / "package" / crate_filename),
             index=str(self.index),
             index_url=self.path.as_uri(),
             upload=str(self.path),
             force=True,
-            extra_opts={"no-verify": no_verify},
         )
 
 
@@ -138,9 +144,10 @@ class Cargo(Package):
         return (self.src_dir / "Cargo.toml").resolve(strict=True)
 
     def deploy_local(self, registry: LocalRegistry, config: Config) -> None:
-        registry.add(manifest=self.manifest)
         # TODO: fetch version from cargo manifest
-        config.patch_crate_registry(name=self.name, version=self._scm.revision)
+        pass
+        # registry.add(manifest=self.manifest)
+        # config.patch_crate_registry(name=self.name, version=self._scm.revision)
 
     def post_download_hook(self): ...
 
