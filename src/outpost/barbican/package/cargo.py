@@ -68,6 +68,9 @@ class LocalRegistry:
     def publish(self, *, name: str, version: str, manifest: Path, target_dir: Path) -> None:
         """Package a new cate and push to local registry index."""
         crate_filename = f"{name}-{version}.crate"
+        crate_index_filepath = self.index / name[:2] / name[2:4] / name
+        if crate_index_filepath.exists():
+            crate_index_filepath.unlink()
         self._cargo.package(manifest_path=str(manifest), target_dir=str(target_dir), no_verify=True)
         self._cargo.index(
             subcmd=["add"],
