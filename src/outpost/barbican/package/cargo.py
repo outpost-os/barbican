@@ -139,7 +139,14 @@ class Cargo(Package):
 
     @property
     def build_options(self) -> list[str]:
-        return list()
+        opts = list()
+        opts.append("-Clto=true")
+        # XXX:
+        #  todo: use pic/no-pic generic opt from project.toml
+        #  Hardcode no-pic (i.e. partial link, relocated and relink at build time)
+        opts.append("-Clink-args=-r")
+        opts.append("-Clink-args=-Wl,-entry=_start")
+        return opts
 
     @property
     @lru_cache

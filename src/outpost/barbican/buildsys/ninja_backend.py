@@ -281,13 +281,8 @@ class NinjaGenFile:
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="OUT_DIR=$builddir"
-            " RUSTFLAGS=@$rustargs"
-            " $cargo build"
-            " --manifest-path=$sourcedir/Cargo.toml"
-            " --target=@$rust_target"
-            " --target-dir=$builddir"
-            " && touch $out",
+            command="cd $builddir && $cargo build --manifest-path=$sourcedir/Cargo.toml --release"
+             + " && touch $out && cd -",
         )
         self._ninja.newline()
         self._ninja.rule(
@@ -300,14 +295,31 @@ class NinjaGenFile:
     def add_cargo_package(self, package: "Package") -> None:
         self._ninja.newline()
         self._ninja.build(
+            f"{package.build_dir}/.cargo/config.toml",
+            "internal",
+            variables={
+                "cmd": "cargo_config",
+                "args": f"--rustargs-file={str(package._parent._kernel.rustargs)} "
+                + f"--target-file={str(package._parent._kernel.rust_target)} "
+                + f"--extra-args=\"" + " ".join(package.build_options) + "\" "
+                + f"{str(package.build_dir)}",
+                "description": f"cargo config {package.name}",
+            },
+            order_only=[f"{dep}_install.stamp" for dep in package.deps],
+        )
+        self._ninja.newline()
+        self._ninja.build(f"{package.name}_setup", "phony", f"{package.build_dir}/.cargo/config.toml")
+        self._ninja.newline()
+        self._ninja.build(
             f"{package.name}_compile.stamp",
             "cargo_compile",
             variables={
                 "sourcedir": package.src_dir,
                 "builddir": package.build_dir,
                 "name": package.name,
+                "opts": package.build_options,
             },
-            order_only=[f"{dep}_install.stamp" for dep in package.deps],
+            implicit=f"{package.name}_setup",
         )
         self._ninja.newline()
         self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
