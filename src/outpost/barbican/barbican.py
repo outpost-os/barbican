@@ -118,7 +118,7 @@ class Project:
         )
 
         ninja.add_meson_rules()
-        ninja.add_cargo_rules(self._kernel.rustargs)
+        ninja.add_cargo_rules(self._kernel.rustargs, self._kernel.rust_target)
 
         # Add setup/compile/install targets for meson packages
         for p in self._packages:

@@ -271,19 +271,22 @@ class NinjaGenFile:
             "touch $out",
         )
 
-    def add_cargo_rules(self, rustargs: Path) -> None:
+    def add_cargo_rules(self, rustargs: Path, rust_target: Path) -> None:
         self._ninja.newline()
         self._ninja.variable("cargo", find_program("cargo"))
         self._ninja.variable("rustargs", str(rustargs.resolve()))
+        self._ninja.variable("rust_target", str(rust_target.resolve()))
         self._ninja.newline()
         self._ninja.rule(
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="OUT_DIR=$builddir $cargo rustc"
-            " --manifest-path=$sourcedir/Cargo.toml "
+            command="OUT_DIR=$builddir"
+            " RUSTFLAGS=@$rustargs"
+            " $cargo build"
+            " --manifest-path=$sourcedir/Cargo.toml"
+            " --target=@$rust_target"
             " --target-dir=$builddir"
-            " -- @$rustargs"
             " && touch $out",
         )
         self._ninja.newline()
@@ -316,7 +319,7 @@ class NinjaGenFile:
             variables={
                 "cmd": "install",
                 "args": f"--suffix=.elf {str(package.build_dir)} "
-                + " ".join((str(t) for t in package.installed_targets)),  # noqa: W503
+                + " ".join((str(t) for t in package.installed_targets)),
                 "description": f"cargo install {package.name}",
             },
         )
