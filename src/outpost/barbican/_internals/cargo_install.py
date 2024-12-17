@@ -29,13 +29,11 @@ def argument_parser() -> ArgumentParser:
         help="cargo build profile",
     )
 
-    print(parser)
     return parser
 
 
 def run(argv: T.List[str]) -> None:
     args = argument_parser().parse_args(argv)
-    print(args)
     target: str = args.target_file.read_text().splitlines()[0]
     from_dir: Path = (args.from_dir / target / args.profile).resolve(strict=True)
     run_install(from_dir, args.files, args.suffix)

@@ -329,8 +329,10 @@ class NinjaGenFile:
             "internal",
             implicit=f"{package.name}_compile",
             variables={
-                "cmd": "install",
-                "args": f"--suffix=.elf {str(package.build_dir)} "
+                "cmd": "cargo_install",
+                "args": f"--suffix=.elf "
+                + f"--target-file={str(package._parent._kernel.rust_target)} "
+                + f"{str(package.build_dir)} "
                 + " ".join((str(t) for t in package.installed_targets)),
                 "description": f"cargo install {package.name}",
             },
