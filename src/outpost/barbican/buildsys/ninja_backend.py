@@ -324,6 +324,11 @@ class NinjaGenFile:
         self._ninja.newline()
         self._ninja.build(f"{package.name}_compile", "phony", f"{package.name}_compile.stamp")
         self._ninja.newline()
+
+        # XXX:
+        #  Cargo binary are built w/o .elf extension that is required here
+        #  so split provides name and pass extension as suffix for install rule
+
         self._ninja.build(
             f"{package.name}_install.stamp",
             "internal",
@@ -333,7 +338,7 @@ class NinjaGenFile:
                 "args": f"--suffix=.elf "
                 + f"--target-file={str(package._parent._kernel.rust_target)} "
                 + f"{str(package.build_dir)} "
-                + " ".join((str(t) for t in package.installed_targets)),
+                + " ".join((str(t.with_suffix('')) for t in package.installed_targets)),
                 "description": f"cargo install {package.name}",
             },
         )
