@@ -195,15 +195,21 @@ class Project:
                     pathlib.Path(firmware_layout[0]),
                     package.name,
                 )
-                ninja.add_relink_meson_target(
+                ninja.add_relink_target(
                     package.name,
                     elf_in,
                     elf_out,
                     linker_script,
-                    package.name,
+                    package_name=package.name if package.backend == Backend.Meson else "kernel",
                 )
 
-                ninja.add_objcopy_rule(elf_out, hex_out, "ihex", [], package.name)
+                ninja.add_objcopy_rule(
+                    elf_out,
+                    hex_out,
+                    "ihex",
+                    [],
+                    package_name=package.name if package.backend == Backend.Meson else "kernel",
+                )
                 app_hex_files.append(hex_out)
 
                 ninja.add_gen_metadata_rule(

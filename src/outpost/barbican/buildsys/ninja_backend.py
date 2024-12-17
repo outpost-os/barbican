@@ -156,7 +156,7 @@ class NinjaGenFile:
             },
         )
 
-    def add_relink_meson_target(
+    def add_relink_target(
         self,
         name: str,
         orig_elf: Path,
