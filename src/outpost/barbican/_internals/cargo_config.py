@@ -13,21 +13,21 @@ import typing as T
 
 
 def run_cargo_config(rustargs: Path, target: Path, extra_args: str, outdir: Path) -> None:
-    target = target.read_text().splitlines()[0]
-    rustargs = rustargs.read_text().splitlines()
-    rustargs.extend(extra_args.split(" "))
-    linkerargs = list(filter(lambda x: x.startswith("-Clinker"), rustargs))
-    linker = linkerargs[0].split("=")[1] if len(linkerargs) else "is not set"
-    rustargs = list(filter(lambda x: not x.startswith("-Clinker"), rustargs))
+    rust_target = target.read_text().splitlines()[0]
+    rust_flags = rustargs.read_text().splitlines()
+    rust_flags.extend(extra_args.split(" "))
+    linker_args = list(filter(lambda x: x.startswith("-Clinker"), rust_flags))
+    linker = linker_args[0].split("=")[1] if len(linker_args) else "is not set"
+    rust_flags = list(filter(lambda x: not x.startswith("-Clinker"), rust_flags))
 
     config = f"""
 [build]
-target = "{target}"
+target = "{rust_target}"
 target-dir = "{str(outdir.resolve())}"
-rustflags = {rustargs}
+rustflags = {rust_flags}
 
-[target.{target}]
-{"#" if not len(linkerargs) else ""}linker = "{linker}"
+[target.{rust_target}]
+{"#" if not len(linker_args) else ""}linker = "{linker}"
 
 [env]
 OUT_DIR = "{str(outdir.resolve())}"
