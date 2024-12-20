@@ -28,14 +28,14 @@ from .package.cargo import Cargo
 from .package import cargo
 
 from .buildsys import ninja_backend
-from .utils import pathhelper
+from .utils import pathhelper, working_directory
 
 
 class Project:
     def __init__(self, project_dir: pathlib.Path) -> None:
         self.path = pathhelper.ProjectPath(
             project_dir=project_dir,
-            output_dir=project_dir,
+            output_dir=project_dir / "output",
         )
 
         # XXX:
@@ -97,7 +97,7 @@ class Project:
         registry = cargo.LocalRegistry(
             self.path.sysroot_data_dir / "cargo" / "registry" / "outpost_sdk"
         )
-        cargo_config = cargo.Config(self.path.build_dir, registry)
+        cargo_config = cargo.Config(self.path.output_dir, registry)
         registry.init()
         self._kernel.install_crates(registry, cargo_config)
         self._runtime.install_crates(registry, cargo_config)
@@ -250,7 +250,8 @@ def update(project: Project) -> None:
 
 
 def setup(project: Project) -> None:
-    project.setup()
+    with working_directory(project.path.output_dir):
+        project.setup()
 
 
 def common_argument_parser() -> ArgumentParser:
