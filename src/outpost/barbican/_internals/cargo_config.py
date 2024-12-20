@@ -16,12 +16,18 @@ def run_cargo_config(rustargs: Path, target: Path, extra_args: str, outdir: Path
     target = target.read_text().splitlines()[0]
     rustargs = rustargs.read_text().splitlines()
     rustargs.extend(extra_args.split(" "))
+    linkerargs = list(filter(lambda x: x.startswith("-Clinker"), rustargs))
+    linker = linkerargs[0].split("=")[1] if len(linkerargs) else "is not set"
+    rustargs = list(filter(lambda x: not x.startswith("-Clinker"), rustargs))
 
     config = f"""
 [build]
 target = "{target}"
 target-dir = "{str(outdir.resolve())}"
 rustflags = {rustargs}
+
+[target.{target}]
+{"#" if not len(linkerargs) else ""}linker = "{linker}"
 
 [env]
 OUT_DIR = "{str(outdir.resolve())}"
