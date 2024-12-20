@@ -149,12 +149,14 @@ class Project:
 
         # Dummy link, for non pic application
         for package in self._packages:
-            if package.is_application and package.backend == Backend.Meson:
-                ninja.add_relink_meson_target(
+            # if package.is_application and package.backend == Backend.Meson:
+            if package.is_application:
+                ninja.add_relink_target(
                     package.name,
                     package.installed_targets[0],
                     package.dummy_linked_targets[0],
                     dummy_linker_script,
+                    package_name=package.name if package.backend == Backend.Meson else "kernel"
                 )
 
         layout_sys_exelist = []
@@ -162,7 +164,8 @@ class Project:
         for package in self._packages:
             if package.is_sys_package:
                 layout_sys_exelist.extend(package.installed_targets)
-            elif package.backend == Backend.Meson:
+            #elif package.backend == Backend.Meson:
+            else:
                 layout_app_exelist.extend(package.dummy_linked_targets)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
@@ -180,7 +183,8 @@ class Project:
 
         # gen_ld/relink/gen_meta/objcopy app(s)
         for package in self._packages:
-            if package.is_application and package.backend == Backend.Meson:
+            #if package.is_application and package.backend == Backend.Meson:
+            if package.is_application:
                 # XXX: Handle multiple exe package
                 elf_in = package.installed_targets[0]
                 elf_out = package.relocated_targets[0]

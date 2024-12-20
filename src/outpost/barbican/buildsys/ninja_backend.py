@@ -281,7 +281,8 @@ class NinjaGenFile:
             "cargo_compile",
             description="cargo compile $name",
             pool="console",
-            command="cd $builddir && $cargo build --manifest-path=$sourcedir/Cargo.toml --release"
+            command="cd $builddir "
+             + " && config=$config $cargo build --manifest-path=$sourcedir/Cargo.toml --release"
              + " && touch $out && cd -",
         )
         self._ninja.newline()
@@ -317,7 +318,7 @@ class NinjaGenFile:
                 "sourcedir": package.src_dir,
                 "builddir": package.build_dir,
                 "name": package.name,
-                "opts": package.build_options,
+                "config": package._dotconfig,
             },
             implicit=f"{package.name}_setup",
         )
