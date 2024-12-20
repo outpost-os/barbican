@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Generate a .cargo/config.toml per cargo app
+"""Generate a .cargo/config.toml per cargo app.
 
 Add target specific and per apps compile flags in a config.
 """

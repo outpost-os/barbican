@@ -302,7 +302,7 @@ class NinjaGenFile:
                 "cmd": "cargo_config",
                 "args": f"--rustargs-file={str(package._parent._kernel.rustargs)} "
                 + f"--target-file={str(package._parent._kernel.rust_target)} "
-                + f'--extra-args="'
+                + '--extra-args="'
                 + " ".join(package.build_options)
                 + '" '
                 + f"{str(package.build_dir)}",
@@ -340,7 +340,7 @@ class NinjaGenFile:
             implicit=f"{package.name}_compile",
             variables={
                 "cmd": "cargo_install",
-                "args": f"--suffix=.elf "
+                "args": "--suffix=.elf "
                 + f"--target-file={str(package._parent._kernel.rust_target)} "
                 + f"{str(package.build_dir)} "
                 + " ".join((str(t.with_suffix("")) for t in package.installed_targets)),
