@@ -71,7 +71,12 @@ class LocalRegistry:
         crate_index_filepath = self.index / name[:2] / name[2:4] / name
         if crate_index_filepath.exists():
             crate_index_filepath.unlink()
-        self._cargo.package(manifest_path=str(manifest), target_dir=str(target_dir), no_verify=True, allow_dirty=True)
+        self._cargo.package(
+            manifest_path=str(manifest),
+            target_dir=str(target_dir),
+            no_verify=True,
+            allow_dirty=True,
+        )
         self._cargo.index(
             subcmd=["add"],
             crate=str(target_dir / "package" / crate_filename),

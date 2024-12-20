@@ -105,4 +105,6 @@ def argument_parser() -> ArgumentParser:
 def run(argv: T.List[str]) -> None:
     args = argument_parser().parse_args(argv)
     # XXX: use builddir as option
-    run_gen_task_metadata_bin(args.input, args.output, ProjectPath.load(args.projectdir / "build"))
+    run_gen_task_metadata_bin(
+        args.input, args.output, ProjectPath.load(args.projectdir / "output" / "build")
+    )

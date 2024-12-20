@@ -35,6 +35,7 @@ OUT_DIR = "{str(outdir.resolve())}"
 
     (outdir / ".cargo" / "config.toml").write_text(config)
 
+
 def argument_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument("--rustargs-file", type=Path, help="rustargs file path")

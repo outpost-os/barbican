@@ -282,8 +282,8 @@ class NinjaGenFile:
             description="cargo compile $name",
             pool="console",
             command="cd $builddir "
-             + " && config=$config $cargo build --manifest-path=$sourcedir/Cargo.toml --release"
-             + " && touch $out && cd -",
+            + " && config=$config $cargo build --manifest-path=$sourcedir/Cargo.toml --release"
+            + " && touch $out && cd -",
         )
         self._ninja.newline()
         self._ninja.rule(
@@ -302,14 +302,18 @@ class NinjaGenFile:
                 "cmd": "cargo_config",
                 "args": f"--rustargs-file={str(package._parent._kernel.rustargs)} "
                 + f"--target-file={str(package._parent._kernel.rust_target)} "
-                + f"--extra-args=\"" + " ".join(package.build_options) + "\" "
+                + f'--extra-args="'
+                + " ".join(package.build_options)
+                + '" '
                 + f"{str(package.build_dir)}",
                 "description": f"cargo config {package.name}",
             },
             order_only=[f"{dep}_install.stamp" for dep in package.deps],
         )
         self._ninja.newline()
-        self._ninja.build(f"{package.name}_setup", "phony", f"{package.build_dir}/.cargo/config.toml")
+        self._ninja.build(
+            f"{package.name}_setup", "phony", f"{package.build_dir}/.cargo/config.toml"
+        )
         self._ninja.newline()
         self._ninja.build(
             f"{package.name}_compile.stamp",
@@ -339,7 +343,7 @@ class NinjaGenFile:
                 "args": f"--suffix=.elf "
                 + f"--target-file={str(package._parent._kernel.rust_target)} "
                 + f"{str(package.build_dir)} "
-                + " ".join((str(t.with_suffix('')) for t in package.installed_targets)),
+                + " ".join((str(t.with_suffix("")) for t in package.installed_targets)),
                 "description": f"cargo install {package.name}",
             },
         )
