@@ -21,18 +21,21 @@ from .console import console
 from .logger import logger, log_config
 from . import config
 from .package import Package, create_package, Backend
+from .package.kernel import Kernel
+from .package.runtime import Runtime
 from .package.meson import Meson
 from .package.cargo import Cargo
+from .package import cargo
 
 from .buildsys import ninja_backend
-from .utils import pathhelper
+from .utils import pathhelper, working_directory
 
 
 class Project:
     def __init__(self, project_dir: pathlib.Path) -> None:
         self.path = pathhelper.ProjectPath(
             project_dir=project_dir,
-            output_dir=project_dir,
+            output_dir=project_dir / "output",
         )
 
         # XXX:
@@ -58,18 +61,12 @@ class Project:
         # This will be, likely, false for next devel step.
 
         # Instantiate Sentry kernel
-        self._packages.append(
-            Meson("kernel", self, self._toml["kernel"], Package.Type.Kernel)  # type: ignore
-        )
+        self._kernel = Kernel(self, self._toml)
+        self._packages.append(self._kernel._package)
+
         # Instantiate libshield
-        self._packages.append(
-            Meson(
-                "runtime",
-                self,
-                self._toml["runtime"],
-                Package.Type.Runtime,  # type: ignore[arg-type]
-            )
-        )
+        self._runtime = Runtime(self, self._toml)
+        self._packages.append(self._runtime._package)
 
         if "application" in self._toml:
             self._noapp = False
@@ -95,6 +92,15 @@ class Project:
             p.update()
 
     def setup(self) -> None:
+
+        logger.info("Create Cargo local repository")
+        registry = cargo.LocalRegistry(
+            self.path.sysroot_data_dir / "cargo" / "registry" / "outpost_sdk"
+        )
+        cargo_config = cargo.Config(self.path.output_dir, registry)
+        registry.init()
+        self._kernel.install_crates(registry, cargo_config)
+        self._runtime.install_crates(registry, cargo_config)
         logger.info(f"Generating {self.name} Ninja build File")
         ninja = ninja_backend.NinjaGenFile(os.path.join(self.path.build_dir, "build.ninja"))
 
@@ -112,7 +118,7 @@ class Project:
         )
 
         ninja.add_meson_rules()
-        ninja.add_cargo_rules()
+        ninja.add_cargo_rules(self._kernel.rustargs, self._kernel.rust_target)
 
         # Add setup/compile/install targets for meson packages
         for p in self._packages:
@@ -143,12 +149,14 @@ class Project:
 
         # Dummy link, for non pic application
         for package in self._packages:
-            if package.is_application and package.backend == Backend.Meson:
-                ninja.add_relink_meson_target(
+            # if package.is_application and package.backend == Backend.Meson:
+            if package.is_application:
+                ninja.add_relink_target(
                     package.name,
                     package.installed_targets[0],
                     package.dummy_linked_targets[0],
                     dummy_linker_script,
+                    package_name=package.name if package.backend == Backend.Meson else "kernel",
                 )
 
         layout_sys_exelist = []
@@ -156,7 +164,7 @@ class Project:
         for package in self._packages:
             if package.is_sys_package:
                 layout_sys_exelist.extend(package.installed_targets)
-            elif package.backend == Backend.Meson:
+            else:
                 layout_app_exelist.extend(package.dummy_linked_targets)
 
         firmware_layout = ninja.add_internal_gen_memory_layout_target(
@@ -174,7 +182,7 @@ class Project:
 
         # gen_ld/relink/gen_meta/objcopy app(s)
         for package in self._packages:
-            if package.is_application and package.backend == Backend.Meson:
+            if package.is_application:
                 # XXX: Handle multiple exe package
                 elf_in = package.installed_targets[0]
                 elf_out = package.relocated_targets[0]
@@ -189,15 +197,21 @@ class Project:
                     pathlib.Path(firmware_layout[0]),
                     package.name,
                 )
-                ninja.add_relink_meson_target(
+                ninja.add_relink_target(
                     package.name,
                     elf_in,
                     elf_out,
                     linker_script,
-                    package.name,
+                    package_name=package.name if package.backend == Backend.Meson else "kernel",
                 )
 
-                ninja.add_objcopy_rule(elf_out, hex_out, "ihex", [], package.name)
+                ninja.add_objcopy_rule(
+                    elf_out,
+                    hex_out,
+                    "ihex",
+                    [],
+                    package_name=package.name if package.backend == Backend.Meson else "kernel",
+                )
                 app_hex_files.append(hex_out)
 
                 ninja.add_gen_metadata_rule(
@@ -238,7 +252,8 @@ def update(project: Project) -> None:
 
 
 def setup(project: Project) -> None:
-    project.setup()
+    with working_directory(project.path.output_dir):
+        project.setup()
 
 
 def common_argument_parser() -> ArgumentParser:

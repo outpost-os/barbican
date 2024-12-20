@@ -10,6 +10,7 @@ import codecs
 import typing
 
 from ..logger import logger
+from ..console import console
 
 
 class Elf:
@@ -133,6 +134,7 @@ class AppElf(Elf):
     def __init__(self, elf: str, out: str | None) -> None:
         super().__init__(elf, out)
         if not self.is_an_outpost_application:
+            console.critical(f"{self.name} is not a valid outpost application")
             raise ValueError
 
         self._prev_sections = dict()

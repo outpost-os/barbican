@@ -4,9 +4,13 @@
 
 import os
 import math
+
+from contextlib import contextmanager
 from enum import Enum
+from pathlib import Path
 
 from ..logger import logger
+
 
 # XXX:
 #  StrEnum is a python 3.11+ feature but as simple as the following.
@@ -22,49 +26,19 @@ except ImportError:
             return name.replace("_", "-").lower()
 
 
-class _WorkingDir:
-    """Helper class for the following decorators.
-
-    Parameters
-    ----------
-    working_dir: str
-    """
-
-    def __init__(self, working_dir: str) -> None:
-        self._prev = os.getcwd()
-        self._next = working_dir
-
-    def enter(self) -> None:
-        logger.debug(f"enterring {self._next} ...")
-        self._prev = os.getcwd()
-        os.chdir(self._next)
-
-    def leave(self) -> None:
-        os.chdir(self._prev)
-        logger.debug(f"... leaving {self._next}")
-
-
-def working_directory(path):
-    """Change working dir for the decorated function.
-
-    Enter a new dir and leave after function call the directory is a decorator argument.
-    """
-
-    def _working_directory(func):
-        def wrapper(*args, **kwargs):
-            try:
-                wd = _WorkingDir(path)
-                wd.enter()
-                ret = func(*args, **kwargs)
-            except Exception:
-                raise
-            finally:
-                wd.leave()
-            return ret
-
-        return wrapper
-
-    return _working_directory
+@contextmanager
+def working_directory(path: Path):
+    prev = Path.cwd()
+    if not path.is_dir():
+        raise NotADirectoryError
+    next = path.resolve()
+    logger.debug(f"entering {str(next)} ...")
+    os.chdir(next)
+    try:
+        yield
+    finally:
+        logger.debug(f"... leaving {next}")
+        os.chdir(prev)
 
 
 def working_directory_attr(attr):
@@ -75,15 +49,8 @@ def working_directory_attr(attr):
 
     def _working_directory(func):
         def wrapper(self, *args, **kwargs):
-            try:
-                wd = _WorkingDir(getattr(self, attr))
-                wd.enter()
-                ret = func(self, *args, **kwargs)
-            except Exception:
-                raise
-            finally:
-                wd.leave()
-            return ret
+            with working_directory(Path(getattr(self, attr))):
+                return func(self, *args, **kwargs)
 
         return wrapper
 
