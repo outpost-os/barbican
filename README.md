@@ -1,163 +1,118 @@
 <!--
-SPDX-FileCopyrightText: 2024 Ledger SAS
+SPDX-FileCopyrightText: 2024 - 2025 Ledger SAS
 
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Ledger python package template repository
+# Outpost Barbican
 
-This repository is made in order to be used as a clean
-basis to produce python packages to be exported to a pypi repository.
+Barbican is the Outpost OS meta tools for building project, SDK and integration,
+written in python.
 
-This repository aim to comply to, at least, PEP420, PEP 517, PEP 621 and PEP 660.
+## Dependencies
+ - Python >= 3.10
+ - Jinja2 >= 3.1.0
+ - jinja-cli >= 1.2.0
+ - jsonschema >= 4.18.0
+ - kconfiglib >= 14.1.0
+ - lief >= 0.13,<0.15
+ - meson >= 1.4.0,<1.5.0
+ - ninja >= 1.11.0
+ - ninja_syntax > 1.7
+ - svd2json >= 0.1.6
+ - dts-utils >= 0.3.0
+ - tomli >= 2.0.1; python_version < '3.11'
+ - referencing >= 0.33.0
+ - rich >= 13.6
+ - GitPython >= 3.1.43
 
-The goal is to modify the content of the pyledger namespace,
-adding your own package name and content, and use the overall python ecosystem
-supported in this very repository to build, check and deploy your package.
+## Usage
 
-## Using Docker
+A project is describe by a toml configuration file, a dts for the targeted SoC
+and `Kconfig` `dotconfig` for kernel and application(s).
 
-This package can be fully manipulated (building, testing, deploying)
-with the `docker-kulos-nexus.orange.ledgerlabs.net/pythonbot` Docker image.
-This can be done through the usual `docker run` or through
-the `.devcontainer.json` vscode file for vscode users.
+### Configuration
 
-## Personalising from this template
+The following is the sample project configuration describing a simple project with
+simple application(s)
 
-This template deploy an empty python package using the `pyledger` python namespace,
-in which a `template` custom package is created. This package hold a stub library,
-and deploy a custom associated `templatebin` executable automatically (see `pyproject.toml` file).
+```toml
+name = 'HelloWorld Project'
+license = 'Apache-2.0'
+license_file = ['LICENSE.txt']
+dts = 'dts/sample.dts'
+crossfile = 'cm33-none-eabi-gcc.ini'
+version = 'v0.0.1'
 
-The goal here is to update the package name and content based on your need,
-keeping all the python related element (CI/CD, build system, linting and so on)
-in order to reduce as much as possible to work associated to the build and quality system.
+[kernel]
+scm.git.uri = 'https://github.com/outpost-os/sentry-kernel.git'
+scm.git.revision = 'main'
+config = 'configs/sentry/nucleo_u5a5.config'
 
-When creating an effective package repository from this template, you need to:
+[runtime]
+scm.git.uri = 'git@github.com:outpost-os/shield.git'
+scm.git.revision = 'main'
+config = 'configs/shield/shield.config'
 
-   1. Rename the `pyledger/template` directory with a real `pyledger` package name
-      (other than template), and write a clean content in it.
-      Just keep the `__version__` definition line in the `__init__.py` file as-is,
-      as it is automatically updated using vcs information
-   1. Replace the occurrences of `template` in `tox.ini` file with your package name
-   1. Replace the occurrences of `template` in `pyproject.tom` file with your package name.
-      This includes the _name_ and _description_ fields,
-      the _dynamic versioning target_ file path and the _homepage_
-   1. Update (or remove) the `tool.poetry.script` field depending on your needs
-      (executable(s) needed or not)
-   1. Replace `env.PROJECTNAME` variable in the `.github/workflows/main.yml` file
-   1. Replace the `tests/test_template.py` with your `pytest` testsuite
-
-That is all ! The build system is ready and you can use the below commands.
-
-## Building
-
-Build the package can be done directly using `poetry`:
-
-```console
-poetry build
+[application.hello]
+scm.git.uri = 'https://github.com/outpost-os/sample-rust-app.git'
+scm.git.revision = 'main'
+config = 'configs/hello/hello.config'
+build.backend = 'cargo'
+depends = []
+provides = ['hello.elf']
 ```
 
-This command performs the following steps:
+### Download
 
-* Parse the `pyproject.toml` file,
-* Calculate the effective project requirements (`poetry.lock` file),
-* Install the build-depends package in a python venv,
-* Build the package.
-
-The result is saved in the `dist/` subdirectory.
-
-## Updating version
-
-The package version is automatically managed based on semver and vcs versioning and tagging.
-This is made through `poetry dynamic versioning`, as set in the `pyproject.toml` file,
-in the `tools.poetry-dynamic-versioning` block.
-
-Updating the version is made using:
+Downloads kernel/runtime and applications describe in `project.toml` to src directory
 
 ```console
-poetry dynamic-versioning
+barbican download
 ```
+### Update
 
-This update in the very same time both the `pyproject.toml` and the `_version.py` file version,
-based on the current VCS state. The version mapping is using dirty flag and metadata (git hash) infos.
-See <https://pypi.org/project/poetry-dynamic-versioning/> for more information.
-
-## Updating dependencies
-
-Dependencies are declared in the `pyproject.toml` file (PEP-517), including separated dependency groups
-for development cases (typically unit testing, PEP-660).
-
-When updating the dependency list, the lock file needs to be updated.
-This is done using:
+Updates sources if configuration change and/or revision update.
+Package need to be already downloaded to be updated.
 
 ```console
-poetry lock
+barbican update
 ```
+### Setup
 
-This command performs the following steps:
-
-* Parse the `pyproject.toml`
-* Recalculate the overall dependency list
-* Check potential incompatibilties
-* Forge the effective dependencies for various cases (install, development, etc.).
-
-## Running the overall testsuite
-
-### Basics
-
-The testsuite is fully manipulated through Tox (<https://tox.wiki/en/latest/>).
-This allows to execute the overall testsuite, linter execution, coverage calculation
-and reporting through a fully integrated framework.
-
-Basic usage:
+Generates jinja build script for project build (i.e. kernel, runtime, application and
+firmware integration). Files are generated in build directory.
 
 ```console
-tox run
+barbican setup
 ```
 
-When executing this command, tox execute all the successive steps declared in the `tox.ini` file.
-
-This includes a linter pass, based on the tools `black`, `mypy` and `flake8`.
-Then the `htmlcov` target is executed. This executes the pytest based unit test suite,
-associated with `coverage` for the test coverage calculation.
-The coverage report is saved as a standalone website in the `htmlcov/` directory,
-giving the overall package coverage.
-
-The Test Suite provide 3 targets that can be executed independently of each others:
-
-* `lint`: linters execution
-  * `mypy`: static typing analysis. Report is in `./mypycov` directory
-  * `flake8`: PEP8 linter validator Report is in `./flakereport` directory
-  * `black`: python code formatter. Returns diff between your code and the `pycodestyle` model.
-* `unittests`: unit testing using `pytest`, without code coverage
-* `htmlcov`: unit testing using `coverage` with code coverage. Report is in `./htmlcov` directory.
-
-This can be done by executing the following:
+### Build
 
 ```console
-tox -e lint
-tox -e unittests
-tox -e htmlcov
+cd output/build
+ninja
 ```
 
-### Using multiple python versions
+## TODO
 
-If the host has multiple python versions installed, `tox` can execute its testenv
-on multiple versions explicitly using the pre-defined environments.
+ - SDK generation
+ - Pre built C and Rust toolchain in SDK
 
-For example, executing the tox `testenv` testsuite (corresponding to the unit-testing)
-on the Python 3.10 environment can be done using:
+## License
 
-```console
-tox -e py310
 ```
+Copyright 2024 - 2025 Ledger SAS
 
-ToX always use virtual environments, that are deployed in the `.tox` local directory,
-allowing concurrent execution of multiple environments if needed.
-All package dependencies are installed in the local virtualenv, without impacting the host.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Forcing ToX to recreate the environment (redeploy the virtual env) is done using the `-r` option.
+ http://www.apache.org/licenses/LICENSE-2.0
 
-## Publishing
-
-Publishing the package can be done using poetry's `publish` target, as described in the manual.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
