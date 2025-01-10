@@ -50,6 +50,10 @@ class BackendFactoryMap(collections.abc.Mapping[Backend, collections.abc.Callabl
 class Package(ABC):
     __backend_factories: T.ClassVar[BackendFactoryMap] = BackendFactoryMap()
 
+    __built_in_options: T.ClassVar[list[str]] = [
+        "static_pie",
+    ]
+
     @unique
     class Type(StrEnum):
         """Package type enumerate."""
@@ -102,6 +106,19 @@ class Package(ABC):
 
         # XXX: Enforce path rel to project configs dir
         self._dotconfig = (Path(self._parent.path.project_dir) / dotconfig).resolve(strict=True)
+
+        self._built_in_build_opts = dict()
+        self._extra_build_opts = dict()
+        if "build" in self._config:
+            build_opts = (
+                self._config["build"]["options"] if "options" in self._config["build"] else dict()
+            )
+            self._built_in_build_opts = dict(
+                filter(lambda key: key in self.__built_in_options, build_opts.items())
+            )
+            self._extra_build_opts = dict(
+                filter(lambda key: key not in self.__built_in_options, build_opts.items())
+            )
 
     @property
     def name(self) -> str:

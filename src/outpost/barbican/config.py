@@ -60,7 +60,14 @@ _KERNEL_SCHEMA = json.loads(
     "type": "object",
     "properties": {
         "scm": { "$ref": "urn:barbican:scm" },
-        "config": { "type": "string" }
+        "config": { "type": "string" },
+        "build": {
+            "type": "object",
+            "properties": {
+                "options": { "$ref": "urn:barbican:build#/properties/options" }
+            },
+            "required": [ "options" ]
+        }
     },
     "required": [ "scm", "config" ],
     "additionalProperties": false
@@ -77,7 +84,14 @@ _RUNTIME_SCHEMA = json.loads(
     "type": "object",
     "properties": {
         "scm": { "$ref": "urn:barbican:scm" },
-        "config": { "type": "string" }
+        "config": { "type": "string" },
+        "build": {
+            "type": "object",
+            "properties": {
+                "options": { "$ref": "urn:barbican:build#/properties/options" }
+            },
+            "required": [ "options" ]
+        }
     },
     "required": [ "scm", "config" ],
     "additionalProperties": false
