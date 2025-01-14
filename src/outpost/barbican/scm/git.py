@@ -173,7 +173,7 @@ class Git(ScmBaseClass):
             if is_new_ref:
                 refspec += ":" + refspec
 
-        fetch_infos = self._repo.remote().fetch(refspec=refspec)
+        fetch_infos = self._repo.remote().fetch(refspec=refspec, progress=GitProgressBar())
 
         # this should never occurs
         if len(fetch_infos) != 1:
