@@ -31,14 +31,14 @@ def _add_build_target_dyndep(
     if implicit_output:
         out.write(" |")
     for f in implicit_output:
-        out.write(f" $\n {f}")
+        out.write(f" $\n {_escape_path(f)}")
 
     out.write(": dyndep")
 
     if implicit_inputs:
         out.write(" |")
     for f in implicit_inputs:
-        out.write(f" $\n {f}")
+        out.write(f" $\n {_escape_path(f)}")
     out.write("\n")
     out.write("  restat = 1\n")
 
@@ -59,26 +59,25 @@ def _gen_ninja_dyndep_file(
 
     buildsys_files = [_escape_path(p) for p in introspect["buildsystem_files"]]
 
-    # all package source files
     sources = []
-    # internal target filename (to be removed from sources)
     filenames = []
+    installed = introspect["installed"]
+
     for target in introspect["targets"]:
         if "filename" in target:
-            filenames.extend([_escape_path(p) for p in target["filename"]])
+            filenames.extend(target["filename"])
+
         if "target_sources" in target:
             for target_sources in target["target_sources"]:
                 if "sources" in target_sources:
-                    sources.extend([_escape_path(p) for p in target_sources["sources"]])
+                    sources.extend(target_sources["sources"])
 
-    # XXX: staging prefix is concatenated here after, escape path after concat.
-    installed = introspect["installed"]
+    compile_implicit_outputs = set(filenames)
+    compile_implicit_inputs = set(buildsys_files + sources)
+    # remove generated file and/or internal target filename also used as input
+    compile_implicit_inputs.difference_update(compile_implicit_outputs)
 
-    compile_implicit_outputs = set([_escape_path(p) for p in installed.keys()])
-    compile_implicit_inputs = set([_escape_path(p) for p in buildsys_files + sources])
-    compile_implicit_inputs.difference_update(set(filenames))
-
-    install_implicit_inputs = compile_implicit_outputs
+    install_implicit_inputs = set(installed.keys())
 
     install_implicit_outputs = set()
     for file in installed.values():
@@ -93,7 +92,7 @@ def _gen_ninja_dyndep_file(
             _path = stagingdir.joinpath(*_path.parts[1:])
         else:
             _path = stagingdir.joinpath(_path)
-        install_implicit_outputs.add(_escape_path(str(_path)))
+        install_implicit_outputs.add(str(_path))
 
     with output.open("w") as dyndep:
         dyndep.write("ninja_dyndep_version = 1\n")
